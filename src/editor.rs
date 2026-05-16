@@ -1,5 +1,3 @@
-use gtk::prelude::*;
-use gtk::{TextBuffer, TextView};
 use sourceview5::{LanguageManager, Buffer, View, StyleSchemeManager};
 use sourceview5::prelude::{BufferExt, ViewExt};
 

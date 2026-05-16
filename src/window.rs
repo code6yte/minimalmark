@@ -21,7 +21,7 @@ pub struct MainWindow {
 }
 
 impl MainWindow {
-    pub fn new(window: &ApplicationWindow, file: Option<&gio::File>, is_dark: bool) -> Self {
+    pub fn new(window: &ApplicationWindow, file: Option<&gio::File>, _is_dark: bool) -> Self {
         let settings = AppSettings::load();
         
         let container = GtkBox::builder()
@@ -78,11 +78,12 @@ impl MainWindow {
             statusbar_clone_for_cursor.update_cursor(line as usize, col as usize);
         });
 
+        let file_clone = file.map(|f| f.clone());
         let window_clone = window.clone();
         let editor_clone_shortcuts = editor.clone();
         let event_controller = EventControllerKey::new();
         shortcuts::setup_shortcuts(&event_controller, move |action| {
-            Self::handle_action(action, &window_clone, &editor_clone_shortcuts, file);
+            Self::handle_action(action, &window_clone, &editor_clone_shortcuts, file_clone.as_ref());
         });
         editor.view().add_controller(event_controller);
 
