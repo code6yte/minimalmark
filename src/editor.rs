@@ -101,7 +101,7 @@ impl EditorPane {
 
     fn get_cursor_iter(&self) -> gtk::TextIter {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
-        let insert_mark = buffer.insert_mark();
+        let insert_mark = buffer.get_insert();
         buffer.iter_at_mark(&insert_mark)
     }
 
