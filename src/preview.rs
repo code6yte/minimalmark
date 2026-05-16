@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{TextBuffer, TextView, ScrolledWindow};
+use gtk::{TextBuffer, ScrolledWindow, TextView};
 
 #[derive(Clone)]
 pub struct PreviewPane {

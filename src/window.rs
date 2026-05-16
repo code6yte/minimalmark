@@ -85,7 +85,7 @@ impl MainWindow {
         shortcuts::setup_shortcuts(&event_controller, move |action| {
             Self::handle_action(action, &window_clone, &editor_clone_shortcuts, file_clone.as_ref());
         });
-        editor.view().add_controller(event_controller);
+        editor.view().widget().add_controller(event_controller);
 
         if let Some(f) = file {
             editor.load_file(f);

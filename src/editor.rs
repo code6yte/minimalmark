@@ -1,4 +1,4 @@
-use gtk::prelude::{Cast, TextBufferExt};
+use gtk::prelude::{Cast, TextBufferExt, TextViewExt, WidgetExt};
 use sourceview5::{LanguageManager, Buffer, View, StyleSchemeManager};
 use sourceview5::prelude::{BufferExt, ViewExt};
 
@@ -73,7 +73,6 @@ impl EditorPane {
     }
 
     pub fn set_font(&self, font: &str, size: u32) {
-        self.view.set_monospace(true);
         let provider = gtk::CssProvider::new();
         let css = format!(
             "textview {{ font-family: '{}'; font-size: {}px; }}",
@@ -81,7 +80,7 @@ impl EditorPane {
         );
         provider.load_from_string(&css);
         gtk::style_context_add_provider_for_display(
-            &self.view.display(),
+            &self.view.widget().display(),
             &provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
@@ -101,7 +100,7 @@ impl EditorPane {
 
     fn get_cursor_iter(&self) -> gtk::TextIter {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
-        let insert_mark = buffer.mark("insert").unwrap();
+        let insert_mark = buffer.get_insert();
         buffer.iter_at_mark(&insert_mark)
     }
 

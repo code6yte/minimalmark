@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{Application};
+use gtk::Application;
 use adw::{ApplicationWindow, StyleManager, prelude::AdwApplicationWindowExt};
 
 use crate::window::MainWindow;
