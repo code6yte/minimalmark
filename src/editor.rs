@@ -1,5 +1,6 @@
 use gio::prelude::*;
 use gtk::prelude::*;
+use sourceview5::prelude::*;
 use sourceview5::{LanguageManager, Buffer, View, StyleSchemeManager};
 
 #[derive(Clone)]

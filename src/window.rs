@@ -1,3 +1,4 @@
+use gio::prelude::*;
 use gtk::prelude::*;
 use gtk::{Box as GtkBox, Orientation, ScrolledWindow, Paned, EventControllerKey};
 use adw::ApplicationWindow;
@@ -40,12 +41,12 @@ impl MainWindow {
         let editor_scroll = ScrolledWindow::new();
         editor_scroll.set_hexpand(true);
         editor_scroll.set_vexpand(true);
-        editor_scroll.set_child(Some(editor.view().upcast_ref::<gtk::Widget>()));
+        editor_scroll.set_child(Some(editor.view().upcast_ref()));
 
         let preview_scroll = ScrolledWindow::new();
         preview_scroll.set_hexpand(true);
         preview_scroll.set_vexpand(true);
-        preview_scroll.set_child(Some(preview.widget().upcast_ref::<gtk::Widget>()));
+        preview_scroll.set_child(Some(preview.widget().upcast_ref()));
 
         let paned = Paned::builder()
             .orientation(Orientation::Horizontal)
@@ -85,7 +86,7 @@ impl MainWindow {
         shortcuts::setup_shortcuts(&event_controller, move |action| {
             Self::handle_action(action, &window_clone, &editor_clone_shortcuts, file_clone.as_ref());
         });
-        editor.view().widget().add_controller(event_controller);
+        editor.view().upcast_ref::<gtk::Widget>().add_controller(event_controller);
 
         if let Some(f) = file {
             editor.load_file(f);
