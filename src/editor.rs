@@ -419,9 +419,14 @@ impl EditorPane {
         use gtk::GestureClick;
         let gesture = GestureClick::new();
         gesture.set_button(3);
-        gesture.connect_pressed(move |_, _count, x, y| {
+        gesture.connect_pressed(move |g, _count, x, y| {
             let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
             popover.set_pointing_to(Some(&rect));
+            if popover.parent().is_none() {
+                if let Some(w) = g.widget() {
+                    popover.set_parent(w);
+                }
+            }
             popover.popup();
         });
         self.view.add_controller(gesture);
