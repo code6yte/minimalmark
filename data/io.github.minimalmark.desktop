@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=MinimalMark
+Comment=A minimal, fast Markdown editor
+Exec=minimalmark %F
+Icon=io.github.minimalmark
+Terminal=false
+Type=Application
+Categories=Utility;TextEditor;Development;
+MimeType=text/markdown;text/x-markdown;
+Keywords=markdown;editor;writing;

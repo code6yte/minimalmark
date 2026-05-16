@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.minimalmark</id>
+  <name>MinimalMark</name>
+  <summary>A minimal, fast Markdown editor</summary>
+  
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  
+  <description>
+    <p>
+      MinimalMark is a lightweight, fast Markdown editor designed for the GNOME desktop.
+      It provides a clean, distraction-free writing experience with live preview.
+    </p>
+    <ul>
+      <li>Split-pane editing with live preview</li>
+      <li>Full CommonMark support with extensions</li>
+      <li>Tables, strikethrough, task lists, footnotes</li>
+      <li>Lightweight and fast startup</li>
+      <li>Native GNOME integration</li>
+    </ul>
+  </description>
+  
+  <launchable type="desktop-id">io.github.minimalmark.desktop</launchable>
+  
+  <screenshots>
+    <screenshot type="default">
+      <caption>MinimalMark editing interface</caption>
+    </screenshot>
+  </screenshots>
+  
+  <url type="homepage">https://github.com/minimalmark/minimalmark</url>
+  <url type="bugtracker">https://github.com/minimalmark/minimalmark/issues</url>
+  
+  <content_rating type="oars-1.1" />
+  
+  <releases>
+    <release version="0.1.0" date="2026-05-16">
+      <description>
+        <p>Initial release</p>
+      </description>
+    </release>
+  </releases>
+</component>
