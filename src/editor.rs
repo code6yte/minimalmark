@@ -1,6 +1,6 @@
-use gtk::prelude::{Cast, TextBufferExt, TextViewExt, WidgetExt};
+use gio::prelude::*;
+use gtk::prelude::*;
 use sourceview5::{LanguageManager, Buffer, View, StyleSchemeManager};
-use sourceview5::prelude::{BufferExt, ViewExt};
 
 #[derive(Clone)]
 pub struct EditorPane {
@@ -80,7 +80,7 @@ impl EditorPane {
         );
         provider.load_from_string(&css);
         gtk::style_context_add_provider_for_display(
-            &self.view.widget().display(),
+            &self.view.clone().upcast::<gtk::Widget>().display(),
             &provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
@@ -100,7 +100,7 @@ impl EditorPane {
 
     fn get_cursor_iter(&self) -> gtk::TextIter {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
-        let insert_mark = buffer.get_insert();
+        let insert_mark = buffer.insert_mark();
         buffer.iter_at_mark(&insert_mark)
     }
 

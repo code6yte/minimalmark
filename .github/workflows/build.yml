@@ -11,7 +11,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-fedora:
@@ -24,16 +23,12 @@ jobs:
       - name: Install system dependencies
         run: |
           dnf install -y \
-            curl gcc pkg-config \
+            rust cargo \
             gtk4-devel glib2-devel \
             webkit2gtk4.1-devel \
             libadwaita-devel \
-            gtksourceview5-devel
-
-      - name: Install Rust via rustup
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+            gtksourceview5-devel \
+            pkg-config
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -42,24 +37,22 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: fedora-44-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: fedora-44-cargo-
+          restore-keys: |
+            fedora-44-cargo-
 
       - name: Cache target directory
         uses: actions/cache@v4
         with:
           path: target
           key: fedora-44-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: fedora-44-target-
+          restore-keys: |
+            fedora-44-target-
 
       - name: Build
-        run: |
-          source "$HOME/.cargo/env"
-          cargo build --release
+        run: cargo build --release
 
       - name: Run checks
-        run: |
-          source "$HOME/.cargo/env"
-          cargo check --release
+        run: cargo check --release
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
