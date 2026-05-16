@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Orientation, Button, Separator, Label};
+use gtk::{Box as GtkBox, Orientation, Button, Separator};
 
 #[derive(Clone)]
 pub struct Sidebar {

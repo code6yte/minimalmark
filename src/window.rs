@@ -51,21 +51,29 @@ impl MainWindow {
         save_btn.set_tooltip_text(Some("Save (Ctrl+S)"));
         header.pack_end(&save_btn);
 
-        let search_btn = ToggleButton::from_icon_name("edit-find-symbolic");
-        search_btn.set_tooltip_text(Some("Search (Ctrl+F)"));
+        let search_btn = ToggleButton::builder()
+            .icon_name("edit-find-symbolic")
+            .tooltip_text("Search (Ctrl+F)")
+            .build();
         header.pack_end(&search_btn);
 
-        let editor_mode_btn = ToggleButton::from_icon_name("document-edit-symbolic");
-        editor_mode_btn.set_tooltip_text(Some("Editor"));
+        let editor_mode_btn = ToggleButton::builder()
+            .icon_name("document-edit-symbolic")
+            .tooltip_text("Editor")
+            .build();
         header.pack_end(&editor_mode_btn);
 
-        let preview_mode_btn = ToggleButton::from_icon_name("document-preview-symbolic");
-        preview_mode_btn.set_tooltip_text(Some("Preview"));
+        let preview_mode_btn = ToggleButton::builder()
+            .icon_name("document-preview-symbolic")
+            .tooltip_text("Preview")
+            .build();
         header.pack_end(&preview_mode_btn);
 
-        let split_mode_btn = ToggleButton::from_icon_name("view-split-left-right-symbolic");
-        split_mode_btn.set_tooltip_text(Some("Split"));
-        split_mode_btn.set_active(true);
+        let split_mode_btn = ToggleButton::builder()
+            .icon_name("view-split-left-right-symbolic")
+            .tooltip_text("Split")
+            .active(true)
+            .build();
         header.pack_end(&split_mode_btn);
 
         let main_box = GtkBox::builder()
