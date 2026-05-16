@@ -156,30 +156,43 @@ impl EditorPane {
         new_state
     }
 
+    pub fn set_source_view(&self, enabled: bool) {
+        if enabled == self.is_source_view.get() { return; }
+        self.is_source_view.set(enabled);
+        if enabled {
+            self.remove_live_preview_tags();
+        } else if self.live_preview_enabled.get() {
+            self.apply_inline_preview();
+        }
+    }
+
     pub fn is_source_view(&self) -> bool {
         self.is_source_view.get()
     }
 
     pub fn remove_live_preview_tags(&self) {
         let tag_names = ["lp-hide", "lp-bold", "lp-italic", "lp-strike", "lp-code", "lp-h1", "lp-h2", "lp-h3"];
-        let start = self.buffer.start_iter();
-        let end = self.buffer.end_iter();
         for name in &tag_names {
             if let Some(tag) = self.buffer.tag_table().lookup(name) {
+                let start = self.buffer.start_iter();
+                let end = self.buffer.end_iter();
                 self.buffer.remove_tag(&tag, &start, &end);
             }
         }
     }
 
     pub fn apply_inline_preview(&self) {
-        if self.is_applying.get() { return; }
+        if self.is_applying.get() || self.is_source_view.get() { return; }
         self.is_applying.set(true);
         self.remove_live_preview_tags();
 
         let text = self.get_text();
         let bytes = text.as_bytes();
         let len = text.len();
-        if len == 0 { return; }
+        if len == 0 {
+            self.is_applying.set(false);
+            return;
+        }
 
         let cursor = self.get_cursor_iter();
         let cursor_line = cursor.line();
@@ -403,6 +416,7 @@ impl EditorPane {
     }
 
     pub fn setup_context_menu(&self, popover: gtk::Popover) {
+        popover.set_parent(self.view.upcast_ref::<gtk::Widget>());
         use gtk::GestureClick;
         let gesture = GestureClick::new();
         gesture.set_button(3);

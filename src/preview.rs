@@ -205,8 +205,9 @@ impl PreviewPane {
                     }
                 }
                 Event::Text(t) => {
-                    let start = self.buffer.end_iter();
+                    let start_offset = self.buffer.end_iter().offset();
                     self.buffer.insert(&mut self.buffer.end_iter(), &t);
+                    let start = self.buffer.iter_at_offset(start_offset);
                     let end = self.buffer.end_iter();
                     for (tag_name, _) in &tag_stack {
                         if let Some(tag) = self.buffer.tag_table().lookup(tag_name) {
@@ -215,8 +216,9 @@ impl PreviewPane {
                     }
                 }
                 Event::Code(t) => {
-                    let start = self.buffer.end_iter();
+                    let start_offset = self.buffer.end_iter().offset();
                     self.buffer.insert(&mut self.buffer.end_iter(), &t);
+                    let start = self.buffer.iter_at_offset(start_offset);
                     let end = self.buffer.end_iter();
                     self.buffer.apply_tag(&self.code_tag, &start, &end);
                 }

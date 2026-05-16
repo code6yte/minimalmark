@@ -234,7 +234,6 @@ window.dark .ctx-section {
     font-size: 13px;
     background: transparent;
     border: none;
-    text-align: left;
 }
 
 .ctx-button:hover {
@@ -296,5 +295,5 @@ window.sepia button:hover {
 
 /* Typewriter Mode - center cursor */
 .typewriter textview {
-    padding-top: 50vh;
+    padding-top: 200px;
 }
