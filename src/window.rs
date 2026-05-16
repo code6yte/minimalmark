@@ -11,7 +11,7 @@ use crate::sidebar::Sidebar;
 use crate::statusbar::StatusBar;
 use crate::markdown::count_stats;
 use crate::shortcuts;
-use crate::ctxmenu::{self, build_context_menu};
+use crate::ctxmenu::build_context_menu;
 use crate::settings::AppSettings;
 use crate::settingsdialog;
 use std::cell::RefCell;
@@ -371,10 +371,10 @@ impl MainWindow {
         action: &str,
         window: &ApplicationWindow,
         editor: &EditorPane,
-        mode: &Rc<Cell<ViewMode>>,
-        paned: &Paned,
-        editor_scroll: &ScrolledWindow,
-        preview_scroll: &ScrolledWindow,
+        _mode: &Rc<Cell<ViewMode>>,
+        _paned: &Paned,
+        _editor_scroll: &ScrolledWindow,
+        _preview_scroll: &ScrolledWindow,
     ) {
         match action {
             "bold" => editor.insert_around_selection("**", "**"),
