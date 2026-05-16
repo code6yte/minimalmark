@@ -9,9 +9,12 @@ use crate::editor::EditorPane;
 use crate::preview::PreviewPane;
 use crate::sidebar::Sidebar;
 use crate::statusbar::StatusBar;
-use crate::markdown::{render_markdown, count_stats};
+use crate::markdown::count_stats;
 use crate::shortcuts;
+use crate::ctxmenu::{self, build_context_menu};
 use crate::settings::AppSettings;
+use crate::settingsdialog;
+use std::cell::RefCell;
 
 #[derive(Clone, Copy, PartialEq)]
 enum ViewMode {
@@ -27,12 +30,20 @@ pub struct MainWindow {
     preview: PreviewPane,
     sidebar: Sidebar,
     statusbar: StatusBar,
-    settings: AppSettings,
+    settings: Rc<RefCell<AppSettings>>,
+    is_focus_mode: Rc<Cell<bool>>,
+    is_typewriter_mode: Rc<Cell<bool>>,
+    is_hemingway_mode: Rc<Cell<bool>>,
+    current_file: Rc<Cell<Option<String>>>,
+    window: Rc<Cell<Option<ApplicationWindow>>>,
+    editor_scroll: ScrolledWindow,
+    paned: Paned,
+    mode: Rc<Cell<ViewMode>>,
 }
 
 impl MainWindow {
     pub fn new(window: &ApplicationWindow, file: Option<&gio::File>, _is_dark: bool) -> Self {
-        let settings = AppSettings::load();
+        let settings = Rc::new(RefCell::new(AppSettings::load()));
 
         let container = GtkBox::builder()
             .orientation(Orientation::Vertical)
@@ -51,6 +62,11 @@ impl MainWindow {
         let save_btn = gtk::Button::from_icon_name("document-save-symbolic");
         save_btn.set_tooltip_text(Some("Save (Ctrl+S)"));
         header.pack_end(&save_btn);
+
+        // Settings button
+        let settings_btn = gtk::Button::from_icon_name("emblem-system-symbolic");
+        settings_btn.set_tooltip_text(Some("Settings (Ctrl+,)"));
+        header.pack_end(&settings_btn);
 
         let search_btn = ToggleButton::builder()
             .icon_name("edit-find-symbolic")
@@ -95,9 +111,16 @@ impl MainWindow {
         let preview = PreviewPane::new();
         let statusbar = StatusBar::new();
 
-        editor.set_font(&settings.editor_font, settings.editor_font_size);
-        editor.toggle_word_wrap(settings.word_wrap);
-        editor.toggle_line_numbers(settings.show_line_numbers);
+        {
+            let s = settings.borrow();
+            editor.set_font(&s.editor_font, s.editor_font_size);
+            editor.toggle_word_wrap(s.word_wrap);
+            editor.toggle_line_numbers(s.show_line_numbers);
+            editor.set_live_preview(s.live_preview);
+            if s.auto_pair {
+                editor.setup_auto_pair();
+            }
+        }
 
         let editor_scroll = ScrolledWindow::new();
         editor_scroll.set_hexpand(true);
@@ -118,6 +141,14 @@ impl MainWindow {
         paned.set_position(600);
 
         content_box.append(&paned);
+
+        // Clone before any moves into closures
+        let paned_for_toggle = paned.clone();
+        let editor_scroll_for_toggle = editor_scroll.clone();
+        let preview_scroll_for_toggle = preview_scroll.clone();
+        let paned_for_shortcut = paned.clone();
+        let editor_scroll_for_shortcut = editor_scroll.clone();
+        let preview_scroll_for_shortcut = preview_scroll.clone();
 
         let search_bar = GtkBox::builder()
             .orientation(Orientation::Horizontal)
@@ -153,12 +184,10 @@ impl MainWindow {
         container.append(&main_box);
 
         // View mode toggling
-        let paned = paned.clone();
         let mode = Rc::new(Cell::new(ViewMode::Split));
 
         editor_mode_btn.connect_toggled({
-            let paned = paned.clone();
-            let editor_scroll = editor_scroll.clone();
+            let paned = paned_for_toggle.clone();
             let pmode = preview_mode_btn.clone();
             let smode = split_mode_btn.clone();
             let mode = mode.clone();
@@ -173,9 +202,9 @@ impl MainWindow {
         });
 
         preview_mode_btn.connect_toggled({
-            let paned = paned.clone();
-            let editor_scroll = editor_scroll.clone();
-            let preview_scroll = preview_scroll.clone();
+            let paned = paned_for_toggle.clone();
+            let editor_scroll = editor_scroll_for_toggle.clone();
+            let preview_scroll = preview_scroll_for_toggle.clone();
             let emode = editor_mode_btn.clone();
             let smode = split_mode_btn.clone();
             let mode = mode.clone();
@@ -196,8 +225,9 @@ impl MainWindow {
         });
 
         split_mode_btn.connect_toggled({
-            let editor_scroll = editor_scroll.clone();
-            let preview_scroll = preview_scroll.clone();
+            let paned = paned_for_toggle.clone();
+            let editor_scroll = editor_scroll_for_toggle.clone();
+            let preview_scroll = preview_scroll_for_toggle.clone();
             let emode = editor_mode_btn.clone();
             let pmode = preview_mode_btn.clone();
             let mode = mode.clone();
@@ -216,22 +246,32 @@ impl MainWindow {
             }
         });
 
-        // Live preview on text changes
+        // Live preview on text changes + outline update
         let preview_clone = preview.clone();
         let statusbar_clone = statusbar.clone();
+        let sidebar_clone = sidebar.clone();
+        let editor_preview = editor.clone();
         editor.buffer().connect_changed(move |buffer| {
             let text = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false);
-            let html = render_markdown(&text);
-            preview_clone.update(&html);
+            preview_clone.update(&text);
             let (words, chars, _, _, reading_time) = count_stats(&text);
             statusbar_clone.update_stats(words, chars, reading_time);
+            sidebar_clone.update_outline(&text);
+            if editor_preview.is_live_preview_enabled() {
+                editor_preview.apply_inline_preview();
+            }
         });
 
+        // Update cursor position and re-apply inline preview on cursor move
         let statusbar_clone = statusbar.clone();
-        editor.buffer().connect_mark_set(move |_buffer, iter, _| {
+        let editor_move = editor.clone();
+        editor.buffer().connect_mark_set(move |_buffer, iter, mark| {
             let line = iter.line() + 1;
             let col = iter.line_index() + 1;
             statusbar_clone.update_cursor(line as usize, col as usize);
+            if mark.name() == Some("insert") && editor_move.is_live_preview_enabled() {
+                editor_move.apply_inline_preview();
+            }
         });
 
         // Search toggle
@@ -244,27 +284,66 @@ impl MainWindow {
             }
         });
 
+        // Settings button
+        let settings_clone2 = settings.clone();
+        let window_clone = window.clone();
+        settings_btn.connect_clicked(move |_| {
+            settingsdialog::show_settings(&window_clone, &settings_clone2);
+        });
+
+        // Context menu
+        let ctx_popover = build_context_menu(&editor);
+        editor.setup_context_menu(&ctx_popover);
+
         // Keyboard shortcuts
         let window_clone = window.clone();
         let editor_clone = editor.clone();
+        let mode_clone = mode.clone();
+        let paned_clone = paned_for_shortcut;
+        let editor_scroll_clone = editor_scroll_for_shortcut;
+        let preview_scroll_clone = preview_scroll_for_shortcut;
+
         let event_controller = EventControllerKey::new();
         shortcuts::setup_shortcuts(&event_controller, move |action| {
-            Self::handle_shortcut(action, &window_clone, &editor_clone);
+            Self::handle_shortcut(
+                action,
+                &window_clone,
+                &editor_clone,
+                &mode_clone,
+                &paned_clone,
+                &editor_scroll_clone,
+                &preview_scroll_clone,
+            );
         });
         editor.view().upcast_ref::<gtk::Widget>().add_controller(event_controller);
+
+        // Hemingway mode - intercept backspace/delete
+        {
+            let is_hemingway = Rc::new(Cell::new(false));
+            let h_is_hemingway = is_hemingway.clone();
+            let h_controller = EventControllerKey::new();
+            h_controller.connect_key_pressed(move |_ctrl, key, _code, _state| {
+                if h_is_hemingway.get() && (key == gtk::gdk::Key::BackSpace || key == gtk::gdk::Key::Delete) {
+                    return glib::Propagation::Stop;
+                }
+                glib::Propagation::Proceed
+            });
+            editor.view().add_controller(h_controller);
+        }
 
         // Load file if provided
         if let Some(f) = file {
             editor.load_file(f);
+            if let Some(name) = f.basename() {
+                window.set_title(&format!("MinimalMark - {}", name.to_string_lossy()));
+            }
         }
 
         let text = editor.buffer().text(&editor.buffer().start_iter(), &editor.buffer().end_iter(), false);
-        let html = render_markdown(&text);
-        preview.update(&html);
+        preview.update(&text);
         let (words, chars, _, _, reading_time) = count_stats(&text);
         statusbar.update_stats(words, chars, reading_time);
-
-        Self::setup_sidebar_callbacks(&sidebar, &editor);
+        sidebar.update_outline(&text);
 
         Self {
             container,
@@ -273,6 +352,14 @@ impl MainWindow {
             sidebar,
             statusbar,
             settings,
+            is_focus_mode: Rc::new(Cell::new(false)),
+            is_typewriter_mode: Rc::new(Cell::new(false)),
+            is_hemingway_mode: Rc::new(Cell::new(false)),
+            current_file: Rc::new(Cell::new(None)),
+            window: Rc::new(Cell::new(Some(window.clone()))),
+            editor_scroll,
+            paned,
+            mode,
         }
     }
 
@@ -280,48 +367,15 @@ impl MainWindow {
         &self.container
     }
 
-    fn setup_sidebar_callbacks(sidebar: &Sidebar, editor: &EditorPane) {
-        let e = editor.clone();
-        sidebar.bold_button().connect_clicked(move |_| e.insert_around_selection("**", "**"));
-        let e = editor.clone();
-        sidebar.italic_button().connect_clicked(move |_| e.insert_around_selection("*", "*"));
-        let e = editor.clone();
-        sidebar.strike_button().connect_clicked(move |_| e.insert_around_selection("~~", "~~"));
-        let e = editor.clone();
-        sidebar.code_button().connect_clicked(move |_| e.insert_around_selection("`", "`"));
-        let e = editor.clone();
-        sidebar.h1_button().connect_clicked(move |_| e.insert_at_line_start("# "));
-        let e = editor.clone();
-        sidebar.h2_button().connect_clicked(move |_| e.insert_at_line_start("## "));
-        let e = editor.clone();
-        sidebar.h3_button().connect_clicked(move |_| e.insert_at_line_start("### "));
-        let e = editor.clone();
-        sidebar.ul_button().connect_clicked(move |_| e.insert_at_line_start("- "));
-        let e = editor.clone();
-        sidebar.ol_button().connect_clicked(move |_| e.insert_at_line_start("1. "));
-        let e = editor.clone();
-        sidebar.task_button().connect_clicked(move |_| e.insert_at_line_start("- [ ] "));
-        let e = editor.clone();
-        sidebar.link_button().connect_clicked(move |_| e.insert_around_selection("[", "](url)"));
-        let e = editor.clone();
-        sidebar.image_button().connect_clicked(move |_| e.insert_around_selection("![alt](", ")"));
-        let e = editor.clone();
-        sidebar.quote_button().connect_clicked(move |_| e.insert_at_line_start("> "));
-        let e = editor.clone();
-        sidebar.table_button().connect_clicked(move |_| {
-            e.insert_text("\n| Col 1 | Col 2 |\n|-------|-------|\n| Cell  | Cell  |\n");
-        });
-        let e = editor.clone();
-        sidebar.codeblock_button().connect_clicked(move |_| {
-            e.insert_around_selection("```\n", "\n```");
-        });
-        let e = editor.clone();
-        sidebar.hr_button().connect_clicked(move |_| {
-            e.insert_text("\n---\n");
-        });
-    }
-
-    fn handle_shortcut(action: &str, window: &ApplicationWindow, editor: &EditorPane) {
+    fn handle_shortcut(
+        action: &str,
+        window: &ApplicationWindow,
+        editor: &EditorPane,
+        mode: &Rc<Cell<ViewMode>>,
+        paned: &Paned,
+        editor_scroll: &ScrolledWindow,
+        preview_scroll: &ScrolledWindow,
+    ) {
         match action {
             "bold" => editor.insert_around_selection("**", "**"),
             "italic" => editor.insert_around_selection("*", "*"),
@@ -330,7 +384,28 @@ impl MainWindow {
             "inline_code" => editor.insert_around_selection("`", "`"),
             "image" => editor.insert_around_selection("![alt](", ")"),
             "table" => editor.insert_text("\n| Col 1 | Col 2 |\n|-------|-------|\n| Cell  | Cell  |\n"),
-            "save" => {},
+            "heading1" => editor.insert_at_line_start("# "),
+            "heading2" => editor.insert_at_line_start("## "),
+            "heading3" => editor.insert_at_line_start("### "),
+            "bullet_list" => editor.insert_at_line_start("- "),
+            "numbered_list" => editor.insert_at_line_start("1. "),
+            "blockquote" => editor.insert_at_line_start("> "),
+            "toggle_source" => {
+                editor.toggle_source_view();
+            }
+            "focus_mode" => {
+                // Toggle focus mode via settings
+            }
+            "typewriter_mode" => {
+                // Toggle typewriter mode via settings
+            }
+            "command_palette" => {
+                // Show command palette
+            }
+            "settings" => {
+                // Show settings window
+            }
+            "save" => {}
             "fullscreen" => {
                 if window.is_fullscreen() { window.unfullscreen(); }
                 else { window.fullscreen(); }

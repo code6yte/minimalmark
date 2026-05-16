@@ -1,140 +1,112 @@
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Orientation, Button, Separator};
+use gtk::{Box as GtkBox, Orientation, Label, ScrolledWindow, ListBox, ListBoxRow};
 
 #[derive(Clone)]
 pub struct Sidebar {
     container: GtkBox,
-    buttons: Vec<Button>,
+    outline_list: ListBox,
 }
 
 impl Sidebar {
     pub fn new() -> Self {
         let container = GtkBox::builder()
             .orientation(Orientation::Vertical)
-            .spacing(2)
-            .width_request(44)
+            .width_request(200)
             .build();
         container.add_css_class("sidebar");
 
-        let mut buttons = Vec::new();
+        let header = GtkBox::builder()
+            .orientation(Orientation::Horizontal)
+            .margin_start(8)
+            .margin_top(8)
+            .margin_bottom(4)
+            .margin_end(8)
+            .build();
 
-        let bold_btn = Self::create_button("format-text-bold-symbolic", "Bold (Ctrl+B)");
-        container.append(&bold_btn);
-        buttons.push(bold_btn.clone());
+        let icon = Label::builder()
+            .label("☰")
+            .css_classes(vec!["outline-icon".to_string()])
+            .build();
+        header.append(&icon);
 
-        let italic_btn = Self::create_button("format-text-italic-symbolic", "Italic (Ctrl+I)");
-        container.append(&italic_btn);
-        buttons.push(italic_btn.clone());
+        let label = Label::builder()
+            .label("Outline")
+            .halign(gtk::Align::Start)
+            .css_classes(vec!["outline-header".to_string()])
+            .build();
+        header.append(&label);
 
-        let strike_btn = Self::create_button("format-text-strikethrough-symbolic", "Strikethrough (Ctrl+K)");
-        container.append(&strike_btn);
-        buttons.push(strike_btn.clone());
+        container.append(&header);
 
-        let code_btn = Self::create_button_with_label("<>", "Inline Code");
-        container.append(&code_btn);
-        buttons.push(code_btn.clone());
+        let outline_list = ListBox::new();
+        outline_list.set_activate_on_single_click(true);
+        outline_list.add_css_class("outline-list");
 
-        container.append(&Self::create_sep());
+        let scroll = ScrolledWindow::builder()
+            .vexpand(true)
+            .build();
+        scroll.set_child(Some(&outline_list));
+        container.append(&scroll);
 
-        let h1_btn = Self::create_button_with_label("H1", "Heading 1");
-        container.append(&h1_btn);
-        buttons.push(h1_btn.clone());
+        let placeholder = Label::builder()
+            .label("No headings")
+            .css_classes(vec!["outline-placeholder".to_string()])
+            .halign(gtk::Align::Center)
+            .valign(gtk::Align::Center)
+            .vexpand(true)
+            .build();
+        outline_list.append(&placeholder);
 
-        let h2_btn = Self::create_button_with_label("H2", "Heading 2");
-        container.append(&h2_btn);
-        buttons.push(h2_btn.clone());
-
-        let h3_btn = Self::create_button_with_label("H3", "Heading 3");
-        container.append(&h3_btn);
-        buttons.push(h3_btn.clone());
-
-        container.append(&Self::create_sep());
-
-        let ul_btn = Self::create_button("format-indent-more-symbolic", "Bullet List");
-        container.append(&ul_btn);
-        buttons.push(ul_btn.clone());
-
-        let ol_btn = Self::create_button("format-indent-less-symbolic", "Numbered List");
-        container.append(&ol_btn);
-        buttons.push(ol_btn.clone());
-
-        let task_btn = Self::create_button_with_label("☑", "Task List");
-        container.append(&task_btn);
-        buttons.push(task_btn.clone());
-
-        container.append(&Self::create_sep());
-
-        let link_btn = Self::create_button("insert-link-symbolic", "Link (Ctrl+L)");
-        container.append(&link_btn);
-        buttons.push(link_btn.clone());
-
-        let image_btn = Self::create_button("image-x-generic-symbolic", "Image");
-        container.append(&image_btn);
-        buttons.push(image_btn.clone());
-
-        let quote_btn = Self::create_button("format-justify-left-symbolic", "Blockquote");
-        container.append(&quote_btn);
-        buttons.push(quote_btn.clone());
-
-        let table_btn = Self::create_button_with_label("⊞", "Table");
-        container.append(&table_btn);
-        buttons.push(table_btn.clone());
-
-        container.append(&Self::create_sep());
-
-        let codeblock_btn = Self::create_button_with_label("{ }", "Code Block");
-        container.append(&codeblock_btn);
-        buttons.push(codeblock_btn.clone());
-
-        let hr_btn = Self::create_button_with_label("—", "Horizontal Rule");
-        container.append(&hr_btn);
-        buttons.push(hr_btn.clone());
-
-        container.append(&GtkBox::new(Orientation::Vertical, 0));
-        container.set_vexpand(true);
-
-        Self { container, buttons }
-    }
-
-    fn create_button(icon_name: &str, tooltip: &str) -> Button {
-        let button = Button::from_icon_name(icon_name);
-        button.set_tooltip_text(Some(tooltip));
-        button.set_focus_on_click(false);
-        button
-    }
-
-    fn create_button_with_label(label: &str, tooltip: &str) -> Button {
-        let button = Button::with_label(label);
-        button.set_tooltip_text(Some(tooltip));
-        button.set_focus_on_click(false);
-        button
-    }
-
-    fn create_sep() -> Separator {
-        let sep = Separator::new(Orientation::Horizontal);
-        sep.set_margin_top(4);
-        sep.set_margin_bottom(4);
-        sep
+        Self { container, outline_list }
     }
 
     pub fn container(&self) -> &GtkBox {
         &self.container
     }
 
-    pub fn bold_button(&self) -> &Button { &self.buttons[0] }
-    pub fn italic_button(&self) -> &Button { &self.buttons[1] }
-    pub fn strike_button(&self) -> &Button { &self.buttons[2] }
-    pub fn code_button(&self) -> &Button { &self.buttons[3] }
-    pub fn h1_button(&self) -> &Button { &self.buttons[4] }
-    pub fn h2_button(&self) -> &Button { &self.buttons[5] }
-    pub fn h3_button(&self) -> &Button { &self.buttons[6] }
-    pub fn ul_button(&self) -> &Button { &self.buttons[7] }
-    pub fn ol_button(&self) -> &Button { &self.buttons[8] }
-    pub fn task_button(&self) -> &Button { &self.buttons[9] }
-    pub fn link_button(&self) -> &Button { &self.buttons[10] }
-    pub fn image_button(&self) -> &Button { &self.buttons[11] }
-    pub fn quote_button(&self) -> &Button { &self.buttons[12] }
-    pub fn table_button(&self) -> &Button { &self.buttons[13] }
-    pub fn codeblock_button(&self) -> &Button { &self.buttons[14] }
-    pub fn hr_button(&self) -> &Button { &self.buttons[15] }
+    pub fn update_outline(&self, text: &str) {
+        let mut headings: Vec<(String, u32, u32)> = Vec::new();
+        for (i, line) in text.lines().enumerate() {
+            let trimmed = line.trim();
+            if let Some(level) = trimmed.chars().take(6).position(|c| c != '#') {
+                if level > 0 && level <= 6 && trimmed.len() > level + 1 && trimmed.as_bytes()[level] == b' ' {
+                    let title = trimmed[level+1..].to_string();
+                    headings.push((title, level as u32, i as u32));
+                }
+            }
+        }
+
+        // Clear existing items
+        while let Some(child) = self.outline_list.first_child() {
+            child.unparent();
+        }
+
+        if headings.is_empty() {
+            let placeholder = Label::builder()
+                .label("No headings")
+                .css_classes(vec!["outline-placeholder".to_string()])
+                .halign(gtk::Align::Center)
+                .valign(gtk::Align::Center)
+                .vexpand(true)
+                .build();
+            self.outline_list.append(&placeholder);
+            return;
+        }
+
+        for (title, level, _line) in &headings {
+            let row = ListBoxRow::new();
+            let indent = if *level == 1 { "" } else { "  " };
+            let prefix = if *level == 1 { "●" } else if *level == 2 { "○" } else { "–" };
+            let label = Label::builder()
+                .label(format!("{}{} {}", indent, prefix, title))
+                .halign(gtk::Align::Start)
+                .margin_start(4 + (level - 1) * 12)
+                .margin_top(3)
+                .margin_bottom(3)
+                .css_classes(vec!["outline-item".to_string()])
+                .build();
+            row.set_child(Some(&label));
+            self.outline_list.append(&row);
+        }
+    }
 }

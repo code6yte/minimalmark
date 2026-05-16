@@ -2,6 +2,14 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ThemeMode {
+    Light,
+    Dark,
+    Sepia,
+    System,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub theme: ThemeMode,
@@ -13,19 +21,16 @@ pub struct AppSettings {
     pub spell_check: bool,
     pub word_wrap: bool,
     pub show_line_numbers: bool,
+    pub live_preview: bool,
     pub focus_mode: bool,
+    pub typewriter_mode: bool,
+    pub hemingway_mode: bool,
+    pub auto_pair: bool,
     pub sync_scrolling: bool,
     pub recent_files: Vec<String>,
     pub window_width: i32,
     pub window_height: i32,
     pub is_maximized: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ThemeMode {
-    Light,
-    Dark,
-    System,
 }
 
 impl Default for AppSettings {
@@ -40,7 +45,11 @@ impl Default for AppSettings {
             spell_check: true,
             word_wrap: true,
             show_line_numbers: false,
+            live_preview: true,
             focus_mode: false,
+            typewriter_mode: false,
+            hemingway_mode: false,
+            auto_pair: true,
             sync_scrolling: true,
             recent_files: Vec::new(),
             window_width: 1280,

@@ -1,8 +1,8 @@
 use gtk::prelude::*;
 use gtk::Application;
 use adw::{ApplicationWindow, StyleManager, prelude::AdwApplicationWindowExt};
-
 use crate::window::MainWindow;
+use crate::settings::AppSettings;
 
 const APP_ID: &str = "io.github.minimalmark";
 
@@ -52,7 +52,28 @@ impl MinimalMarkApp {
         );
     }
 
+    fn apply_theme_from_settings() {
+        use crate::settings::ThemeMode;
+        let settings = AppSettings::load();
+        let style_manager = StyleManager::default();
+        match settings.theme {
+            ThemeMode::Light => {
+                style_manager.set_color_scheme(adw::ColorScheme::ForceLight);
+            }
+            ThemeMode::Dark => {
+                style_manager.set_color_scheme(adw::ColorScheme::ForceDark);
+            }
+            ThemeMode::Sepia => {
+                style_manager.set_color_scheme(adw::ColorScheme::ForceLight);
+            }
+            ThemeMode::System => {
+                style_manager.set_color_scheme(adw::ColorScheme::Default);
+            }
+        }
+    }
+
     fn build_ui(app: &Application) {
+        Self::apply_theme_from_settings();
         let style_manager = StyleManager::default();
         let is_dark = style_manager.is_dark();
 
@@ -69,6 +90,7 @@ impl MinimalMarkApp {
     }
 
     fn build_ui_with_file(app: &Application, file: &gio::File) {
+        Self::apply_theme_from_settings();
         let style_manager = StyleManager::default();
         let is_dark = style_manager.is_dark();
 

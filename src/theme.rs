@@ -86,4 +86,34 @@ impl ThemeColors {
             scrollbar_thumb: "#48484A",
         }
     }
+
+    pub fn sepia() -> Self {
+        Self {
+            bg_primary: "#F4ECD8",
+            bg_secondary: "#FAF4E8",
+            bg_tertiary: "#EDE0C8",
+            bg_toolbar: "#F0E6D0",
+            bg_editor: "#FAF4E8",
+            bg_preview: "#F4ECD8",
+            bg_headerbar: "linear-gradient(180deg, #F0E6D0 0%, #E8DCC4 100%)",
+            text_primary: "#5C3D2E",
+            text_secondary: "#8B6914",
+            text_tertiary: "#A08060",
+            accent: "#A65D2C",
+            accent_hover: "#8B4E22",
+            border: "#D4C5A9",
+            border_light: "#DDD0BA",
+            shadow: "rgba(92, 61, 46, 0.1)",
+            code_bg: "#EDE0C8",
+            selection: "#A65D2C33",
+            link: "#8B5E3C",
+            blockquote_border: "#D4C5A9",
+            blockquote_bg: "#EDE0C8",
+            table_header: "#EDE0C8",
+            table_border: "#D4C5A9",
+            hr_color: "#D4C5A9",
+            scrollbar_track: "transparent",
+            scrollbar_thumb: "#C4B49A",
+        }
+    }
 }

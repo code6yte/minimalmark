@@ -76,10 +76,11 @@ window.dark paned > separator {
     background: #38383A;
 }
 
+/* Sidebar */
 .sidebar {
     background: #F5F5F7;
     border-right: 1px solid #E5E5EA;
-    padding: 8px 4px;
+    padding: 0;
 }
 
 window.dark .sidebar {
@@ -87,27 +88,66 @@ window.dark .sidebar {
     border-right: 1px solid #38383A;
 }
 
-.sidebar button {
-    border-radius: 6px;
-    padding: 6px;
-    min-width: 36px;
-    min-height: 36px;
+.outline-icon {
+    font-size: 14px;
+    margin-right: 6px;
+    color: #6E6E73;
+}
+
+window.dark .outline-icon {
+    color: #98989D;
+}
+
+.outline-header {
     font-size: 13px;
+    font-weight: 600;
+    color: #1D1D1F;
 }
 
-.sidebar button:hover {
-    background: rgba(0, 122, 255, 0.1);
+window.dark .outline-header {
+    color: #F5F5F7;
 }
 
-.sidebar button:checked {
-    background: #007AFF;
-    color: white;
+.outline-list {
+    background: transparent;
 }
 
-window.dark .sidebar button:hover {
-    background: rgba(10, 132, 255, 0.15);
+.outline-list row {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    margin: 1px 4px;
+    padding: 2px 4px;
 }
 
+.outline-list row:hover {
+    background: rgba(0, 122, 255, 0.08);
+}
+
+window.dark .outline-list row:hover {
+    background: rgba(10, 132, 255, 0.12);
+}
+
+.outline-item {
+    font-size: 12px;
+    color: #6E6E73;
+}
+
+window.dark .outline-item {
+    color: #98989D;
+}
+
+.outline-placeholder {
+    font-size: 12px;
+    color: #86868B;
+    font-style: italic;
+}
+
+window.dark .outline-placeholder {
+    color: #636366;
+}
+
+/* Status Bar */
 .statusbar {
     background: #FAFAFA;
     border-top: 1px solid #E5E5EA;
@@ -160,13 +200,101 @@ window.dark scrollbar slider {
     background: rgba(255, 255, 255, 0.2);
 }
 
-popover {
+/* Context Menu */
+.ctx-menu {
     border-radius: 10px;
     border: 1px solid #D2D2D7;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
 }
 
-window.dark popover {
+window.dark .ctx-menu {
     border: 1px solid #38383A;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: rgba(44, 44, 46, 0.95);
+}
+
+.ctx-section {
+    font-size: 11px;
+    font-weight: 600;
+    color: #86868B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+window.dark .ctx-section {
+    color: #636366;
+}
+
+.ctx-button {
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    background: transparent;
+    border: none;
+    text-align: left;
+}
+
+.ctx-button:hover {
+    background: rgba(0, 122, 255, 0.1);
+}
+
+window.dark .ctx-button:hover {
+    background: rgba(10, 132, 255, 0.15);
+}
+
+/* Preferences Window */
+preferenceswindow {
+    border-radius: 12px;
+}
+
+window.dark preferenceswindow {
+    background: #2C2C2E;
+}
+
+/* Sepia Theme */
+window.sepia headerbar {
+    background: linear-gradient(180deg, #F0E6D0 0%, #E8DCC4 100%);
+    border-bottom: 1px solid #D4C5A9;
+}
+
+window.sepia textview {
+    background: #FAF4E8;
+    color: #5C3D2E;
+}
+
+window.sepia textview selection {
+    background: #A65D2C33;
+}
+
+window.sepia .sidebar {
+    background: #F4ECD8;
+    border-right: 1px solid #DDD0BA;
+}
+
+window.sepia .statusbar {
+    background: #F0E6D0;
+    border-top: 1px solid #DDD0BA;
+    color: #8B6914;
+}
+
+window.sepia .ctx-menu {
+    background: rgba(250, 244, 232, 0.95);
+    border: 1px solid #D4C5A9;
+}
+
+window.sepia button:hover {
+    background: rgba(166, 93, 44, 0.1);
+}
+
+/* Focus Mode - dim non-active content */
+.focus-dim {
+    opacity: 0.3;
+}
+
+/* Typewriter Mode - center cursor */
+.typewriter textview {
+    padding-top: 50vh;
 }

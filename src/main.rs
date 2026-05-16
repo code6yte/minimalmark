@@ -8,6 +8,8 @@ mod shortcuts;
 mod sidebar;
 mod statusbar;
 mod theme;
+mod ctxmenu;
+mod settingsdialog;
 
 use app::MinimalMarkApp;
 
