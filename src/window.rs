@@ -293,7 +293,7 @@ impl MainWindow {
 
         // Context menu
         let ctx_popover = build_context_menu(&editor);
-        editor.setup_context_menu(&ctx_popover);
+        editor.setup_context_menu(ctx_popover.clone());
 
         // Keyboard shortcuts
         let window_clone = window.clone();

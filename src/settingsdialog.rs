@@ -38,7 +38,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         auto_pair_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().auto_pair = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     editor_group.add(&auto_pair_row);
@@ -57,7 +57,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         live_preview_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().live_preview = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     editor_group.add(&live_preview_row);
@@ -76,7 +76,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         spell_check_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().spell_check = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     editor_group.add(&spell_check_row);
@@ -95,7 +95,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         line_numbers_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().show_line_numbers = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     editor_group.add(&line_numbers_row);
@@ -114,7 +114,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         word_wrap_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().word_wrap = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     editor_group.add(&word_wrap_row);
@@ -144,7 +144,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         typewriter_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().typewriter_mode = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     view_group.add(&typewriter_row);
@@ -163,7 +163,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         focus_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().focus_mode = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     view_group.add(&focus_row);
@@ -182,7 +182,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         hemingway_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().hemingway_mode = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     view_group.add(&hemingway_row);
@@ -260,7 +260,7 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         auto_save_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().auto_save = active;
             settings.borrow().save();
-            false
+            false.into()
         });
     }
     auto_save_group.add(&auto_save_row);

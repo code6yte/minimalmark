@@ -18,7 +18,7 @@ pub fn setup_shortcuts(
             (true, false, false, gtk::gdk::Key::l) => Some("link"),
             (true, true, false, gtk::gdk::Key::c) => Some("inline_code"),
             (true, true, false, gtk::gdk::Key::i) => Some("image"),
-            (true, true, false, gtk::gdk::Key::t) => Some("table"),
+            // table shortcut removed - available via context menu
 
             // Headings
             (true, false, false, gtk::gdk::Key::_1) => Some("heading1"),

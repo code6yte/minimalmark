@@ -56,54 +56,54 @@ impl EditorPane {
             .name("lp-bold")
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&tag_bold);
+        buffer.tag_table().add(&tag_bold);
 
         let tag_italic = gtk::TextTag::builder()
             .name("lp-italic")
             .style(gtk::pango::Style::Italic)
             .build();
-        buffer.add_tag(&tag_italic);
+        buffer.tag_table().add(&tag_italic);
 
         let tag_strike = gtk::TextTag::builder()
             .name("lp-strike")
             .strikethrough(true)
             .build();
-        buffer.add_tag(&tag_strike);
+        buffer.tag_table().add(&tag_strike);
 
         let tag_code = gtk::TextTag::builder()
             .name("lp-code")
             .family("monospace")
             .background_rgba(&gdk::RGBA::new(0.95, 0.95, 0.97, 1.0))
             .build();
-        buffer.add_tag(&tag_code);
+        buffer.tag_table().add(&tag_code);
 
         let tag_h1 = gtk::TextTag::builder()
             .name("lp-h1")
             .scale(1.8)
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&tag_h1);
+        buffer.tag_table().add(&tag_h1);
 
         let tag_h2 = gtk::TextTag::builder()
             .name("lp-h2")
             .scale(1.5)
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&tag_h2);
+        buffer.tag_table().add(&tag_h2);
 
         let tag_h3 = gtk::TextTag::builder()
             .name("lp-h3")
             .scale(1.2)
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&tag_h3);
+        buffer.tag_table().add(&tag_h3);
 
         let tag_hide = gtk::TextTag::builder()
             .name("lp-hide")
             .scale(0.1)
             .foreground_rgba(&gdk::RGBA::new(0.0, 0.0, 0.0, 0.0))
             .build();
-        buffer.add_tag(&tag_hide);
+        buffer.tag_table().add(&tag_hide);
 
         buffer.set_text("# Start writing Markdown...\n\nType or paste your content here.");
 
@@ -402,16 +402,16 @@ impl EditorPane {
         buffer.insert(&mut line_start, prefix);
     }
 
-    pub fn setup_context_menu(&self, popover: &gtk::Popover) {
-        use gtk::EventControllerRightClick;
-        let popover = popover.clone();
-        let right_click = EventControllerRightClick::new();
-        right_click.connect_released(move |_ctrl, x, y| {
+    pub fn setup_context_menu(&self, popover: gtk::Popover) {
+        use gtk::GestureClick;
+        let gesture = GestureClick::new();
+        gesture.set_button(3);
+        gesture.connect_pressed(move |_, _count, x, y| {
             let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
             popover.set_pointing_to(Some(&rect));
             popover.popup();
         });
-        self.view.add_controller(right_click);
+        self.view.add_controller(gesture);
     }
 
     // Auto-pair brackets and quotes

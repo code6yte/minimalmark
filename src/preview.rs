@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 use gtk::{TextBuffer, ScrolledWindow, TextView};
-use pulldown_cmark::{Parser, Options, Event, Tag, TagEnd, HeadingLevel, CowStr};
+use pulldown_cmark::{Parser, Options, Event, Tag, TagEnd, HeadingLevel, CowStr, BlockQuoteKind};
 
 #[derive(Clone)]
 pub struct PreviewPane {
@@ -26,47 +26,47 @@ impl PreviewPane {
             .name("pv-bold")
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&bold_tag);
+        buffer.tag_table().add(&bold_tag);
 
         let italic_tag = gtk::TextTag::builder()
             .name("pv-italic")
             .style(gtk::pango::Style::Italic)
             .build();
-        buffer.add_tag(&italic_tag);
+        buffer.tag_table().add(&italic_tag);
 
         let strike_tag = gtk::TextTag::builder()
             .name("pv-strike")
             .strikethrough(true)
             .build();
-        buffer.add_tag(&strike_tag);
+        buffer.tag_table().add(&strike_tag);
 
         let code_tag = gtk::TextTag::builder()
             .name("pv-code")
             .family("monospace")
             .scale(0.9)
             .build();
-        buffer.add_tag(&code_tag);
+        buffer.tag_table().add(&code_tag);
 
         let h1_tag = gtk::TextTag::builder()
             .name("pv-h1")
             .scale(2.0)
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&h1_tag);
+        buffer.tag_table().add(&h1_tag);
 
         let h2_tag = gtk::TextTag::builder()
             .name("pv-h2")
             .scale(1.6)
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&h2_tag);
+        buffer.tag_table().add(&h2_tag);
 
         let h3_tag = gtk::TextTag::builder()
             .name("pv-h3")
             .scale(1.3)
             .weight(gtk::pango::Weight::Bold)
             .build();
-        buffer.add_tag(&h3_tag);
+        buffer.tag_table().add(&h3_tag);
 
         let quote_tag = gtk::TextTag::builder()
             .name("pv-quote")
@@ -74,14 +74,14 @@ impl PreviewPane {
             .foreground_rgba(&gtk::gdk::RGBA::new(0.43, 0.43, 0.45, 1.0))
             .style(gtk::pango::Style::Italic)
             .build();
-        buffer.add_tag(&quote_tag);
+        buffer.tag_table().add(&quote_tag);
 
         let link_tag = gtk::TextTag::builder()
             .name("pv-link")
             .foreground_rgba(&gtk::gdk::RGBA::new(0.0, 0.48, 1.0, 1.0))
             .underline(gtk::pango::Underline::Single)
             .build();
-        buffer.add_tag(&link_tag);
+        buffer.tag_table().add(&link_tag);
 
         let view = TextView::builder()
             .buffer(&buffer)
@@ -134,8 +134,8 @@ impl PreviewPane {
                             };
                             (size.to_string(), 1)
                         }
-                        Tag::Bold => ("pv-bold".to_string(), 2),
-                        Tag::Italic => ("pv-italic".to_string(), 2),
+                        Tag::Strong => ("pv-bold".to_string(), 2),
+                        Tag::Emphasis => ("pv-italic".to_string(), 2),
                         Tag::Strikethrough => ("pv-strike".to_string(), 2),
                         Tag::CodeBlock(_) => {
                             self.buffer.insert(&mut self.buffer.end_iter(), "\n");
@@ -143,7 +143,7 @@ impl PreviewPane {
                         }
                         Tag::List(_) => { continue; }
                         Tag::Item => { self.buffer.insert(&mut self.buffer.end_iter(), "  • "); continue; }
-                        Tag::BlockQuote => {
+                        Tag::BlockQuote(_kind) => {
                             self.buffer.insert(&mut self.buffer.end_iter(), "\n");
                             ("pv-quote".to_string(), 1)
                         }
@@ -182,12 +182,12 @@ impl PreviewPane {
                             self.buffer.insert(&mut self.buffer.end_iter(), "\n");
                         }
                         TagEnd::Item => {}
-                        TagEnd::Bold | TagEnd::Italic | TagEnd::Strikethrough => {
+                        TagEnd::Strong | TagEnd::Emphasis | TagEnd::Strikethrough => {
                             if !tag_stack.is_empty() {
                                 let last = tag_stack.last().unwrap();
                                 let name = match &tag {
-                                    TagEnd::Bold => "pv-bold",
-                                    TagEnd::Italic => "pv-italic",
+                                    TagEnd::Strong => "pv-bold",
+                                    TagEnd::Emphasis => "pv-italic",
                                     TagEnd::Strikethrough => "pv-strike",
                                     _ => "",
                                 };
@@ -227,7 +227,7 @@ impl PreviewPane {
                     self.buffer.insert(&mut self.buffer.end_iter(), "\n─────────────────────\n");
                 }
                 Event::FootnoteReference(_) | Event::TaskListMarker(..) => {}
-                Event::Html(_) | Event::InlineHtml(_) => {
+                Event::Html(_) => {
                     // HTML is stripped
                 }
                 Event::InlineMath(_) | Event::DisplayMath(_) => {}
