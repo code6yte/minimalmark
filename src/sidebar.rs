@@ -100,7 +100,7 @@ impl Sidebar {
             let label = Label::builder()
                 .label(format!("{}{} {}", indent, prefix, title))
                 .halign(gtk::Align::Start)
-                .margin_start(4 + (level - 1) * 12)
+                .margin_start(4i32 + (level - 1) as i32 * 12)
                 .margin_top(3)
                 .margin_bottom(3)
                 .css_classes(vec!["outline-item".to_string()])

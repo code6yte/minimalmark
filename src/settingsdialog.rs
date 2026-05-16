@@ -25,7 +25,6 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
     let auto_pair_row = ActionRow::builder()
         .title("Auto-Pair Brackets")
         .subtitle("Automatically close [], (), {}, \"\", ''")
-        .activatable_widget("auto_pair_switch")
         .build();
     let auto_pair_switch = gtk::Switch::builder()
         .valign(gtk::Align::Center)

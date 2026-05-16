@@ -269,7 +269,7 @@ impl MainWindow {
             let line = iter.line() + 1;
             let col = iter.line_index() + 1;
             statusbar_clone.update_cursor(line as usize, col as usize);
-            if mark.name() == Some("insert") && editor_move.is_live_preview_enabled() {
+            if mark.name().as_deref() == Some("insert") && editor_move.is_live_preview_enabled() {
                 editor_move.apply_inline_preview();
             }
         });
@@ -335,7 +335,7 @@ impl MainWindow {
         if let Some(f) = file {
             editor.load_file(f);
             if let Some(name) = f.basename() {
-                window.set_title(&format!("MinimalMark - {}", name.to_string_lossy()));
+                window.set_title(Some(&format!("MinimalMark - {}", name.to_string_lossy())));
             }
         }
 

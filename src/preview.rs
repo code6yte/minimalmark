@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 use gtk::{TextBuffer, ScrolledWindow, TextView};
-use pulldown_cmark::{Parser, Options, Event, Tag, TagEnd, HeadingLevel, CowStr, BlockQuoteKind};
+use pulldown_cmark::{Parser, Options, Event, Tag, TagEnd, HeadingLevel};
 
 #[derive(Clone)]
 pub struct PreviewPane {
@@ -24,7 +24,7 @@ impl PreviewPane {
 
         let bold_tag = gtk::TextTag::builder()
             .name("pv-bold")
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&bold_tag);
 
@@ -50,21 +50,21 @@ impl PreviewPane {
         let h1_tag = gtk::TextTag::builder()
             .name("pv-h1")
             .scale(2.0)
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&h1_tag);
 
         let h2_tag = gtk::TextTag::builder()
             .name("pv-h2")
             .scale(1.6)
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&h2_tag);
 
         let h3_tag = gtk::TextTag::builder()
             .name("pv-h3")
             .scale(1.3)
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&h3_tag);
 
@@ -172,7 +172,7 @@ impl PreviewPane {
                                 tag_stack.pop();
                             }
                         }
-                        TagEnd::BlockQuote => {
+                        TagEnd::BlockQuote(_) => {
                             self.buffer.insert(&mut self.buffer.end_iter(), "\n");
                             if !tag_stack.is_empty() && tag_stack.last().unwrap().0 == "pv-quote" {
                                 tag_stack.pop();

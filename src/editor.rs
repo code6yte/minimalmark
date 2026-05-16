@@ -54,7 +54,7 @@ impl EditorPane {
 
         let tag_bold = gtk::TextTag::builder()
             .name("lp-bold")
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&tag_bold);
 
@@ -80,21 +80,21 @@ impl EditorPane {
         let tag_h1 = gtk::TextTag::builder()
             .name("lp-h1")
             .scale(1.8)
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&tag_h1);
 
         let tag_h2 = gtk::TextTag::builder()
             .name("lp-h2")
             .scale(1.5)
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&tag_h2);
 
         let tag_h3 = gtk::TextTag::builder()
             .name("lp-h3")
             .scale(1.2)
-            .weight(gtk::pango::Weight::Bold)
+            .weight(700)
             .build();
         buffer.tag_table().add(&tag_h3);
 
