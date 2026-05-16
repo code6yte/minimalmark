@@ -5,7 +5,7 @@ mod preview;
 mod markdown;
 mod settings;
 mod shortcuts;
-mod toolbar;
+mod sidebar;
 mod statusbar;
 mod theme;
 

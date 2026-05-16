@@ -1,19 +1,20 @@
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Orientation, Button};
+use gtk::{Box as GtkBox, Orientation, Button, Separator, Label};
 
 #[derive(Clone)]
-pub struct Toolbar {
+pub struct Sidebar {
     container: GtkBox,
     buttons: Vec<Button>,
 }
 
-impl Toolbar {
+impl Sidebar {
     pub fn new() -> Self {
         let container = GtkBox::builder()
-            .orientation(Orientation::Horizontal)
-            .spacing(4)
+            .orientation(Orientation::Vertical)
+            .spacing(2)
+            .width_request(44)
             .build();
-        container.add_css_class("toolbar");
+        container.add_css_class("sidebar");
 
         let mut buttons = Vec::new();
 
@@ -29,7 +30,11 @@ impl Toolbar {
         container.append(&strike_btn);
         buttons.push(strike_btn.clone());
 
-        container.append(&Self::create_separator());
+        let code_btn = Self::create_button_with_label("<>", "Inline Code");
+        container.append(&code_btn);
+        buttons.push(code_btn.clone());
+
+        container.append(&Self::create_sep());
 
         let h1_btn = Self::create_button_with_label("H1", "Heading 1");
         container.append(&h1_btn);
@@ -43,7 +48,7 @@ impl Toolbar {
         container.append(&h3_btn);
         buttons.push(h3_btn.clone());
 
-        container.append(&Self::create_separator());
+        container.append(&Self::create_sep());
 
         let ul_btn = Self::create_button("format-indent-more-symbolic", "Bullet List");
         container.append(&ul_btn);
@@ -53,11 +58,11 @@ impl Toolbar {
         container.append(&ol_btn);
         buttons.push(ol_btn.clone());
 
-        let task_btn = Self::create_button_with_label("☐", "Task List");
+        let task_btn = Self::create_button_with_label("☑", "Task List");
         container.append(&task_btn);
         buttons.push(task_btn.clone());
 
-        container.append(&Self::create_separator());
+        container.append(&Self::create_sep());
 
         let link_btn = Self::create_button("insert-link-symbolic", "Link (Ctrl+L)");
         container.append(&link_btn);
@@ -67,10 +72,6 @@ impl Toolbar {
         container.append(&image_btn);
         buttons.push(image_btn.clone());
 
-        let code_btn = Self::create_button_with_label("<>", "Code Block");
-        container.append(&code_btn);
-        buttons.push(code_btn.clone());
-
         let quote_btn = Self::create_button("format-justify-left-symbolic", "Blockquote");
         container.append(&quote_btn);
         buttons.push(quote_btn.clone());
@@ -79,11 +80,18 @@ impl Toolbar {
         container.append(&table_btn);
         buttons.push(table_btn.clone());
 
-        container.append(&Self::create_separator());
+        container.append(&Self::create_sep());
 
-        let fullscreen_btn = Self::create_button("view-fullscreen-symbolic", "Fullscreen (F11)");
-        container.append(&fullscreen_btn);
-        buttons.push(fullscreen_btn.clone());
+        let codeblock_btn = Self::create_button_with_label("{ }", "Code Block");
+        container.append(&codeblock_btn);
+        buttons.push(codeblock_btn.clone());
+
+        let hr_btn = Self::create_button_with_label("—", "Horizontal Rule");
+        container.append(&hr_btn);
+        buttons.push(hr_btn.clone());
+
+        container.append(&GtkBox::new(Orientation::Vertical, 0));
+        container.set_vexpand(true);
 
         Self { container, buttons }
     }
@@ -102,11 +110,10 @@ impl Toolbar {
         button
     }
 
-    fn create_separator() -> GtkBox {
-        let sep = GtkBox::builder()
-            .orientation(Orientation::Vertical)
-            .build();
-        sep.set_size_request(1, 24);
+    fn create_sep() -> Separator {
+        let sep = Separator::new(Orientation::Horizontal);
+        sep.set_margin_top(4);
+        sep.set_margin_bottom(4);
         sep
     }
 
@@ -114,63 +121,20 @@ impl Toolbar {
         &self.container
     }
 
-    pub fn bold_button(&self) -> &Button {
-        &self.buttons[0]
-    }
-
-    pub fn italic_button(&self) -> &Button {
-        &self.buttons[1]
-    }
-
-    pub fn strike_button(&self) -> &Button {
-        &self.buttons[2]
-    }
-
-    pub fn h1_button(&self) -> &Button {
-        &self.buttons[3]
-    }
-
-    pub fn h2_button(&self) -> &Button {
-        &self.buttons[4]
-    }
-
-    pub fn h3_button(&self) -> &Button {
-        &self.buttons[5]
-    }
-
-    pub fn ul_button(&self) -> &Button {
-        &self.buttons[6]
-    }
-
-    pub fn ol_button(&self) -> &Button {
-        &self.buttons[7]
-    }
-
-    pub fn task_button(&self) -> &Button {
-        &self.buttons[8]
-    }
-
-    pub fn link_button(&self) -> &Button {
-        &self.buttons[9]
-    }
-
-    pub fn image_button(&self) -> &Button {
-        &self.buttons[10]
-    }
-
-    pub fn code_button(&self) -> &Button {
-        &self.buttons[11]
-    }
-
-    pub fn quote_button(&self) -> &Button {
-        &self.buttons[12]
-    }
-
-    pub fn table_button(&self) -> &Button {
-        &self.buttons[13]
-    }
-
-    pub fn fullscreen_button(&self) -> &Button {
-        &self.buttons[14]
-    }
+    pub fn bold_button(&self) -> &Button { &self.buttons[0] }
+    pub fn italic_button(&self) -> &Button { &self.buttons[1] }
+    pub fn strike_button(&self) -> &Button { &self.buttons[2] }
+    pub fn code_button(&self) -> &Button { &self.buttons[3] }
+    pub fn h1_button(&self) -> &Button { &self.buttons[5] }
+    pub fn h2_button(&self) -> &Button { &self.buttons[6] }
+    pub fn h3_button(&self) -> &Button { &self.buttons[7] }
+    pub fn ul_button(&self) -> &Button { &self.buttons[9] }
+    pub fn ol_button(&self) -> &Button { &self.buttons[10] }
+    pub fn task_button(&self) -> &Button { &self.buttons[11] }
+    pub fn link_button(&self) -> &Button { &self.buttons[13] }
+    pub fn image_button(&self) -> &Button { &self.buttons[14] }
+    pub fn quote_button(&self) -> &Button { &self.buttons[15] }
+    pub fn table_button(&self) -> &Button { &self.buttons[16] }
+    pub fn codeblock_button(&self) -> &Button { &self.buttons[18] }
+    pub fn hr_button(&self) -> &Button { &self.buttons[19] }
 }
