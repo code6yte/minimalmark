@@ -64,7 +64,7 @@ impl MinimalMarkApp {
             .build();
 
         let main_window = MainWindow::new(&window, None, is_dark);
-        window.set_content(Some(&main_window.container()));
+        window.set_content(Some(main_window.container().upcast_ref::<gtk::Widget>()));
         window.present();
     }
 
@@ -84,7 +84,7 @@ impl MinimalMarkApp {
             .build();
 
         let main_window = MainWindow::new(&window, Some(file), is_dark);
-        window.set_content(Some(&main_window.container()));
+        window.set_content(Some(main_window.container().upcast_ref::<gtk::Widget>()));
         window.present();
     }
 }

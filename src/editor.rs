@@ -51,10 +51,6 @@ impl EditorPane {
         &self.view
     }
 
-    pub fn gtk_buffer(&self) -> &TextBuffer {
-        self.buffer.upcast_ref()
-    }
-
     pub fn load_file(&self, file: &gio::File) {
         let (contents, _) = file.load_contents(gio::Cancellable::NONE).unwrap();
         let text = String::from_utf8_lossy(&contents);
@@ -104,10 +100,15 @@ impl EditorPane {
         }
     }
 
+    fn get_cursor_iter(&self) -> gtk::TextIter {
+        let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
+        let insert_mark = buffer.mark("insert").unwrap();
+        buffer.iter_at_mark(&insert_mark)
+    }
+
     pub fn insert_text(&self, text: &str) {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
-        let insert_mark = buffer.insert_mark();
-        let mut iter = buffer.iter_at_mark(&insert_mark);
+        let mut iter = self.get_cursor_iter();
         buffer.insert(&mut iter, text);
     }
 
@@ -117,8 +118,7 @@ impl EditorPane {
             buffer.insert(&mut end.clone(), after);
             buffer.insert(&mut start.clone(), before);
         } else {
-            let insert_mark = buffer.insert_mark();
-            let mut iter = buffer.iter_at_mark(&insert_mark);
+            let mut iter = self.get_cursor_iter();
             buffer.insert(&mut iter, before);
             buffer.insert(&mut iter, after);
         }
@@ -126,8 +126,7 @@ impl EditorPane {
 
     pub fn insert_at_line_start(&self, prefix: &str) {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
-        let insert_mark = buffer.insert_mark();
-        let cursor_iter = buffer.iter_at_mark(&insert_mark);
+        let cursor_iter = self.get_cursor_iter();
         let mut line_start = cursor_iter;
         line_start.set_line_index(0);
         buffer.insert(&mut line_start, prefix);
