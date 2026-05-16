@@ -127,50 +127,50 @@ impl Toolbar {
     }
 
     pub fn h1_button(&self) -> &Button {
-        &self.buttons[4]
+        &self.buttons[3]
     }
 
     pub fn h2_button(&self) -> &Button {
-        &self.buttons[5]
+        &self.buttons[4]
     }
 
     pub fn h3_button(&self) -> &Button {
-        &self.buttons[6]
+        &self.buttons[5]
     }
 
     pub fn ul_button(&self) -> &Button {
-        &self.buttons[8]
+        &self.buttons[6]
     }
 
     pub fn ol_button(&self) -> &Button {
-        &self.buttons[9]
+        &self.buttons[7]
     }
 
     pub fn task_button(&self) -> &Button {
-        &self.buttons[10]
+        &self.buttons[8]
     }
 
     pub fn link_button(&self) -> &Button {
-        &self.buttons[12]
+        &self.buttons[9]
     }
 
     pub fn image_button(&self) -> &Button {
-        &self.buttons[13]
+        &self.buttons[10]
     }
 
     pub fn code_button(&self) -> &Button {
-        &self.buttons[14]
+        &self.buttons[11]
     }
 
     pub fn quote_button(&self) -> &Button {
-        &self.buttons[15]
+        &self.buttons[12]
     }
 
     pub fn table_button(&self) -> &Button {
-        &self.buttons[16]
+        &self.buttons[13]
     }
 
     pub fn fullscreen_button(&self) -> &Button {
-        &self.buttons[18]
+        &self.buttons[14]
     }
 }

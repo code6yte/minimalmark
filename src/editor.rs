@@ -52,9 +52,10 @@ impl EditorPane {
     }
 
     pub fn load_file(&self, file: &gio::File) {
-        let (contents, _) = file.load_contents(gio::Cancellable::NONE).unwrap();
-        let text = String::from_utf8_lossy(&contents);
-        self.buffer.set_text(&text);
+        if let Ok((contents, _)) = file.load_contents(gio::Cancellable::NONE) {
+            let text = String::from_utf8_lossy(&contents);
+            self.buffer.set_text(&text);
+        }
     }
 
     pub fn save_file(&self, file: &gio::File) {
