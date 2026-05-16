@@ -1,6 +1,6 @@
 use gio::prelude::*;
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Orientation, ScrolledWindow, Paned, EventControllerKey, ToggleButton, SearchEntry};
+use gtk::{Box as GtkBox, Orientation, ScrolledWindow, EventControllerKey, ToggleButton, SearchEntry, Stack, MenuButton, PopoverMenu, StackSwitcher};
 use adw::ApplicationWindow;
 use std::cell::Cell;
 use std::rc::Rc;
@@ -18,9 +18,9 @@ use std::cell::RefCell;
 
 #[derive(Clone, Copy, PartialEq)]
 enum ViewMode {
-    Editor,
+    Source,
+    Live,
     Preview,
-    Split,
 }
 
 #[derive(Clone)]
@@ -37,8 +37,10 @@ pub struct MainWindow {
     current_file: Rc<Cell<Option<String>>>,
     window: Rc<Cell<Option<ApplicationWindow>>>,
     editor_scroll: ScrolledWindow,
-    paned: Paned,
+    preview_scroll: ScrolledWindow,
+    stack: Stack,
     mode: Rc<Cell<ViewMode>>,
+    sidebar_visible: Rc<Cell<bool>>,
 }
 
 impl MainWindow {
@@ -51,65 +53,49 @@ impl MainWindow {
 
         let header = gtk::HeaderBar::new();
 
-        let new_icon = gtk::Image::from_icon_name("document-new-symbolic");
-        new_icon.set_pixel_size(16);
-        let new_btn = gtk::Button::new();
-        new_btn.set_child(Some(&new_icon));
-        new_btn.set_tooltip_text(Some("New (Ctrl+N)"));
-        header.pack_start(&new_btn);
-
-        let open_icon = gtk::Image::from_icon_name("document-open-symbolic");
-        open_icon.set_pixel_size(16);
-        let open_btn = gtk::Button::new();
-        open_btn.set_child(Some(&open_icon));
-        open_btn.set_tooltip_text(Some("Open (Ctrl+O)"));
-        header.pack_start(&open_btn);
-
-        let save_icon = gtk::Image::from_icon_name("document-save-symbolic");
-        save_icon.set_pixel_size(16);
-        let save_btn = gtk::Button::new();
-        save_btn.set_child(Some(&save_icon));
-        save_btn.set_tooltip_text(Some("Save (Ctrl+S)"));
-        header.pack_end(&save_btn);
-
-        let settings_icon = gtk::Image::from_icon_name("emblem-system-symbolic");
-        settings_icon.set_pixel_size(16);
-        let settings_btn = gtk::Button::new();
-        settings_btn.set_child(Some(&settings_icon));
-        settings_btn.set_tooltip_text(Some("Settings (Ctrl+,)"));
-        header.pack_end(&settings_btn);
-
-        let search_btn = ToggleButton::builder()
-            .icon_name("edit-find-symbolic")
-            .tooltip_text("Search (Ctrl+F)")
-            .build();
-        header.pack_end(&search_btn);
-
-        let editor_mode_btn = ToggleButton::builder()
-            .icon_name("document-edit-symbolic")
-            .tooltip_text("Editor")
-            .build();
-        header.pack_end(&editor_mode_btn);
-
-        let preview_mode_btn = ToggleButton::builder()
-            .icon_name("document-preview-symbolic")
-            .tooltip_text("Preview")
-            .build();
-        header.pack_end(&preview_mode_btn);
-
-        let split_mode_btn = ToggleButton::builder()
-            .icon_name("view-split-left-right-symbolic")
-            .tooltip_text("Split")
+        // Sidebar toggle button
+        let sidebar_toggle = ToggleButton::builder()
+            .icon_name("sidebar-show-symbolic")
+            .tooltip_text("Toggle Outline (Ctrl+H)")
             .active(true)
             .build();
-        header.pack_end(&split_mode_btn);
+        header.pack_start(&sidebar_toggle);
+
+        // View mode stack switcher
+        let stack_switcher = StackSwitcher::builder()
+            .build();
+
+        // Settings button
+        let settings_btn = gtk::Button::from_icon_name("emblem-system-symbolic");
+        settings_btn.set_tooltip_text(Some("Preferences (Ctrl+,)"));
+        header.pack_end(&settings_btn);
+
+        // Menu button
+        let menu_button = MenuButton::builder()
+            .icon_name("open-menu-symbolic")
+            .tooltip_text("Menu")
+            .build();
+
+        // Build popover menu
+        let menu_model = Self::build_menu_model();
+        let popover = PopoverMenu::from_model(Some(&menu_model));
+        menu_button.set_popover(Some(&popover));
+
+        header.pack_end(&menu_button);
+        header.pack_end(&stack_switcher);
 
         let main_box = GtkBox::builder()
             .orientation(Orientation::Horizontal)
             .build();
 
         let sidebar = Sidebar::new();
-        main_box.append(sidebar.container());
+        let sidebar_container = GtkBox::builder()
+            .orientation(Orientation::Vertical)
+            .width_request(200)
+            .height_request(100)
+            .build();
+        sidebar_container.append(sidebar.container());
+        main_box.append(&sidebar_container);
 
         let separator = gtk::Separator::new(Orientation::Vertical);
         main_box.append(&separator);
@@ -143,23 +129,20 @@ impl MainWindow {
         preview_scroll.set_vexpand(true);
         preview_scroll.set_child(Some(preview.widget().upcast_ref::<gtk::Widget>()));
 
-        let paned = Paned::builder()
-            .orientation(Orientation::Horizontal)
-            .wide_handle(false)
-            .build();
-        paned.set_start_child(Some(&editor_scroll));
-        paned.set_end_child(Some(&preview_scroll));
-        paned.set_position(600);
+        // Stack for view modes
+        let stack = Stack::new();
+        stack.add_named(&editor_scroll, Some("source"));
+        stack.add_named(&preview_scroll, Some("preview"));
+        stack.set_transition_type(gtk::StackTransitionType::Crossfade);
+        stack.set_transition_duration(200);
 
-        content_box.append(&paned);
+        content_box.append(&stack);
+        stack_switcher.set_stack(Some(&stack));
 
         // Clone before any moves into closures
-        let paned_for_toggle = paned.clone();
-        let editor_scroll_for_toggle = editor_scroll.clone();
-        let preview_scroll_for_toggle = preview_scroll.clone();
-        let paned_for_shortcut = paned.clone();
-        let editor_scroll_for_shortcut = editor_scroll.clone();
-        let preview_scroll_for_shortcut = preview_scroll.clone();
+        let stack_for_toggle = stack.clone();
+        let sidebar_container_clone = sidebar_container.clone();
+        let separator_clone = separator.clone();
 
         let search_bar = GtkBox::builder()
             .orientation(Orientation::Horizontal)
@@ -194,65 +177,41 @@ impl MainWindow {
         container.append(&header);
         container.append(&main_box);
 
-        // View mode toggling
-        let mode = Rc::new(Cell::new(ViewMode::Split));
+        // View mode: default to Live
+        let mode = Rc::new(Cell::new(ViewMode::Live));
+        stack.set_visible_child_name("source");
 
-        editor_mode_btn.connect_toggled({
-            let paned = paned_for_toggle.clone();
-            let pmode = preview_mode_btn.clone();
-            let smode = split_mode_btn.clone();
-            let mode = mode.clone();
+        // Sidebar toggle
+        sidebar_toggle.connect_toggled({
+            let sidebar_container = sidebar_container_clone.clone();
+            let separator = separator_clone.clone();
+            let sidebar_visible = Rc::new(Cell::new(true));
+            let sidebar_visible_ref = sidebar_visible.clone();
             move |btn| {
-                if btn.is_active() {
-                    mode.set(ViewMode::Editor);
-                    pmode.set_active(false);
-                    smode.set_active(false);
-                    paned.set_end_child(Option::<&gtk::Widget>::None);
-                }
+                let visible = btn.is_active();
+                sidebar_container.set_visible(visible);
+                separator.set_visible(visible);
+                sidebar_visible_ref.set(visible);
             }
         });
 
-        preview_mode_btn.connect_toggled({
-            let paned = paned_for_toggle.clone();
-            let editor_scroll = editor_scroll_for_toggle.clone();
-            let preview_scroll = preview_scroll_for_toggle.clone();
-            let emode = editor_mode_btn.clone();
-            let smode = split_mode_btn.clone();
+        // Stack visibility changed handler
+        stack.connect_visible_child_notify({
             let mode = mode.clone();
-            move |btn| {
-                if btn.is_active() {
-                    mode.set(ViewMode::Preview);
-                    emode.set_active(false);
-                    smode.set_active(false);
-                    paned.set_start_child(Option::<&gtk::Widget>::None);
-                    paned.set_end_child(Some(&preview_scroll));
-                } else if mode.get() == ViewMode::Preview {
-                    paned.set_start_child(Some(&editor_scroll));
-                    paned.set_end_child(Some(&preview_scroll));
-                    mode.set(ViewMode::Split);
-                    smode.set_active(true);
-                }
-            }
-        });
-
-        split_mode_btn.connect_toggled({
-            let paned = paned_for_toggle.clone();
-            let editor_scroll = editor_scroll_for_toggle.clone();
-            let preview_scroll = preview_scroll_for_toggle.clone();
-            let emode = editor_mode_btn.clone();
-            let pmode = preview_mode_btn.clone();
-            let mode = mode.clone();
-            move |btn| {
-                if btn.is_active() {
-                    mode.set(ViewMode::Split);
-                    emode.set_active(false);
-                    pmode.set_active(false);
-                    paned.set_start_child(Some(&editor_scroll));
-                    paned.set_end_child(Some(&preview_scroll));
-                } else if mode.get() == ViewMode::Split {
-                    mode.set(ViewMode::Editor);
-                    emode.set_active(true);
-                    paned.set_end_child(Option::<&gtk::Widget>::None);
+            let editor = editor.clone();
+            let preview = preview.clone();
+            move |stack| {
+                let name = stack.visible_child_name().map(|s| s.to_string()).unwrap_or_default();
+                let new_mode = match name.as_str() {
+                    "source" => ViewMode::Source,
+                    "preview" => ViewMode::Preview,
+                    _ => ViewMode::Live,
+                };
+                mode.set(new_mode);
+                if new_mode == ViewMode::Source {
+                    editor.set_source_view(true);
+                } else if new_mode == ViewMode::Live {
+                    editor.set_source_view(false);
                 }
             }
         });
@@ -268,7 +227,7 @@ impl MainWindow {
             let (words, chars, _, _, reading_time) = count_stats(&text);
             statusbar_clone.update_stats(words, chars, reading_time);
             sidebar_clone.update_outline(&text);
-            if editor_preview.is_live_preview_enabled() {
+            if editor_preview.is_live_preview_enabled() && !editor_preview.is_source_view() {
                 editor_preview.apply_inline_preview();
             }
         });
@@ -280,26 +239,21 @@ impl MainWindow {
             let line = iter.line() + 1;
             let col = iter.line_index() + 1;
             statusbar_clone.update_cursor(line as usize, col as usize);
-            if mark.name().as_deref() == Some("insert") && editor_move.is_live_preview_enabled() {
+            if mark.name().as_deref() == Some("insert") && editor_move.is_live_preview_enabled() && !editor_move.is_source_view() {
                 editor_move.apply_inline_preview();
-            }
-        });
-
-        // Search toggle
-        let search_bar_weak = search_bar.clone();
-        let search_entry_weak = search_entry.clone();
-        search_btn.connect_toggled(move |btn| {
-            search_bar_weak.set_visible(btn.is_active());
-            if btn.is_active() {
-                search_entry_weak.grab_focus();
             }
         });
 
         // Settings button
         let settings_clone2 = settings.clone();
         let window_clone = window.clone();
+        let editor_clone_for_settings = editor.clone();
         settings_btn.connect_clicked(move |_| {
-            settingsdialog::show_settings(&window_clone, &settings_clone2);
+            settingsdialog::show_settings(
+                &window_clone,
+                &settings_clone2,
+                &editor_clone_for_settings,
+            );
         });
 
         // Context menu
@@ -307,23 +261,19 @@ impl MainWindow {
         editor.setup_context_menu(ctx_popover.clone());
 
         // Keyboard shortcuts
-        let window_clone = window.clone();
-        let editor_clone = editor.clone();
-        let mode_clone = mode.clone();
-        let paned_clone = paned_for_shortcut;
-        let editor_scroll_clone = editor_scroll_for_shortcut;
-        let preview_scroll_clone = preview_scroll_for_shortcut;
+        let window_clone_shortcuts = window.clone();
+        let editor_clone_shortcuts = editor.clone();
+        let mode_clone_shortcuts = mode.clone();
+        let stack_clone_shortcuts = stack.clone();
 
         let event_controller = EventControllerKey::new();
         shortcuts::setup_shortcuts(&event_controller, move |action| {
             Self::handle_shortcut(
                 action,
-                &window_clone,
-                &editor_clone,
-                &mode_clone,
-                &paned_clone,
-                &editor_scroll_clone,
-                &preview_scroll_clone,
+                &window_clone_shortcuts,
+                &editor_clone_shortcuts,
+                &mode_clone_shortcuts,
+                &stack_clone_shortcuts,
             );
         });
         editor.view().upcast_ref::<gtk::Widget>().add_controller(event_controller);
@@ -369,23 +319,63 @@ impl MainWindow {
             current_file: Rc::new(Cell::new(None)),
             window: Rc::new(Cell::new(Some(window.clone()))),
             editor_scroll,
-            paned,
+            preview_scroll,
+            stack,
             mode,
+            sidebar_visible: Rc::new(Cell::new(true)),
         }
+    }
+
+    fn build_menu_model() -> gio::MenuModel {
+        let menu = gio::Menu::new();
+
+        let file_section = gio::Menu::new();
+        file_section.append(Some("New"), Some("app.new"));
+        file_section.append(Some("Open"), Some("app.open"));
+        file_section.append(Some("Save"), Some("app.save"));
+        menu.append_section(None, &file_section);
+
+        let edit_section = gio::Menu::new();
+        edit_section.append(Some("Bold"), Some("win.bold"));
+        edit_section.append(Some("Italic"), Some("win.italic"));
+        edit_section.append(Some("Strikethrough"), Some("win.strikethrough"));
+        edit_section.append(Some("Inline Code"), Some("win.inline_code"));
+        menu.append_section(None, &edit_section);
+
+        let view_section = gio::Menu::new();
+        view_section.append(Some("Preferences"), Some("win.preferences"));
+        view_section.append(Some("Toggle Sidebar"), Some("win.toggle_sidebar"));
+        menu.append_section(None, &view_section);
+
+        menu.upcast()
     }
 
     pub fn container(&self) -> &GtkBox {
         &self.container
     }
 
+    pub fn editor(&self) -> &EditorPane {
+        &self.editor
+    }
+
+    pub fn settings(&self) -> &Rc<RefCell<AppSettings>> {
+        &self.settings
+    }
+
+    pub fn current_file(&self) -> Rc<Cell<Option<String>>> {
+        self.current_file.clone()
+    }
+
+    pub fn set_current_file(&self, path: Option<String>) {
+        self.current_file.set(path);
+    }
+
     fn handle_shortcut(
         action: &str,
         window: &ApplicationWindow,
         editor: &EditorPane,
-        _mode: &Rc<Cell<ViewMode>>,
-        _paned: &Paned,
-        _editor_scroll: &ScrolledWindow,
-        _preview_scroll: &ScrolledWindow,
+        mode: &Rc<Cell<ViewMode>>,
+        stack: &Stack,
     ) {
         match action {
             "bold" => editor.insert_around_selection("**", "**"),
@@ -402,20 +392,16 @@ impl MainWindow {
             "numbered_list" => editor.insert_at_line_start("1. "),
             "blockquote" => editor.insert_at_line_start("> "),
             "toggle_source" => {
-                editor.toggle_source_view();
+                match mode.get() {
+                    ViewMode::Source => stack.set_visible_child_name("preview"),
+                    ViewMode::Preview => stack.set_visible_child_name("source"),
+                    ViewMode::Live => stack.set_visible_child_name("source"),
+                }
             }
-            "focus_mode" => {
-                // Toggle focus mode via settings
-            }
-            "typewriter_mode" => {
-                // Toggle typewriter mode via settings
-            }
-            "command_palette" => {
-                // Show command palette
-            }
-            "settings" => {
-                // Show settings window
-            }
+            "focus_mode" => {}
+            "typewriter_mode" => {}
+            "command_palette" => {}
+            "settings" => {}
             "save" => {}
             "fullscreen" => {
                 if window.is_fullscreen() { window.unfullscreen(); }

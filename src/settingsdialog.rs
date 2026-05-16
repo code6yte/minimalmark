@@ -1,10 +1,15 @@
 use adw::prelude::*;
-use adw::{PreferencesWindow, PreferencesPage, PreferencesGroup, ActionRow, ComboRow};
+use adw::{PreferencesWindow, PreferencesPage, PreferencesGroup, ActionRow, ComboRow, SpinRow};
 use crate::settings::{AppSettings, ThemeMode};
+use crate::editor::EditorPane;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSettings>>) {
+pub fn show_settings(
+    parent: &impl IsA<gtk::Window>,
+    settings: &Rc<RefCell<AppSettings>>,
+    editor: &EditorPane,
+) {
     let win = PreferencesWindow::builder()
         .title("Preferences")
         .transient_for(parent)
@@ -53,32 +58,15 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
     live_preview_row.add_suffix(&live_preview_switch);
     {
         let settings = settings.clone();
+        let editor = editor.clone();
         live_preview_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().live_preview = active;
             settings.borrow().save();
+            editor.set_live_preview(active);
             false.into()
         });
     }
     editor_group.add(&live_preview_row);
-
-    let spell_check_row = ActionRow::builder()
-        .title("Spell Check")
-        .subtitle("Enable system spell checking")
-        .build();
-    let spell_check_switch = gtk::Switch::builder()
-        .valign(gtk::Align::Center)
-        .active(settings.borrow().spell_check)
-        .build();
-    spell_check_row.add_suffix(&spell_check_switch);
-    {
-        let settings = settings.clone();
-        spell_check_switch.connect_state_set(move |_, active| {
-            settings.borrow_mut().spell_check = active;
-            settings.borrow().save();
-            false.into()
-        });
-    }
-    editor_group.add(&spell_check_row);
 
     let line_numbers_row = ActionRow::builder()
         .title("Show Line Numbers")
@@ -91,9 +79,11 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
     line_numbers_row.add_suffix(&line_numbers_switch);
     {
         let settings = settings.clone();
+        let editor = editor.clone();
         line_numbers_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().show_line_numbers = active;
             settings.borrow().save();
+            editor.toggle_line_numbers(active);
             false.into()
         });
     }
@@ -110,15 +100,84 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
     word_wrap_row.add_suffix(&word_wrap_switch);
     {
         let settings = settings.clone();
+        let editor = editor.clone();
         word_wrap_switch.connect_state_set(move |_, active| {
             settings.borrow_mut().word_wrap = active;
             settings.borrow().save();
+            editor.toggle_word_wrap(active);
             false.into()
         });
     }
     editor_group.add(&word_wrap_row);
 
     editor_page.add(&editor_group);
+
+    // Font settings group
+    let font_group = PreferencesGroup::builder()
+        .title("Font")
+        .build();
+
+    let font_row = ComboRow::builder()
+        .title("Editor Font")
+        .build();
+    let font_model = gtk::StringList::new(&[
+        "SF Mono, JetBrains Mono, Fira Code, monospace",
+        "JetBrains Mono, monospace",
+        "Fira Code, monospace",
+        "Cascadia Code, monospace",
+        "Source Code Pro, monospace",
+        "Hack, monospace",
+        "Ubuntu Mono, monospace",
+        "DejaVu Sans Mono, monospace",
+        "Consolas, monospace",
+        "Menlo, monospace",
+    ]);
+    font_row.set_model(Some(&font_model));
+    let current_font = settings.borrow().editor_font.clone();
+    let mut font_idx = 0u32;
+    for (i, font) in font_model.iter().enumerate() {
+        if font.to_string() == current_font {
+            font_idx = i as u32;
+            break;
+        }
+    }
+    font_row.set_selected(font_idx);
+    {
+        let settings = settings.clone();
+        let editor = editor.clone();
+        font_row.connect_selected_notify(move |row| {
+            let idx = row.selected();
+            if let Some(font) = font_model.string(idx) {
+                let font_str = font.to_string();
+                settings.borrow_mut().editor_font = font_str.clone();
+                settings.borrow().save();
+                let size = settings.borrow().editor_font_size;
+                editor.set_font(&font_str, size);
+            }
+        });
+    }
+    font_group.add(&font_row);
+
+    let font_size_row = SpinRow::builder()
+        .title("Font Size")
+        .subtitle("Editor font size in pixels")
+        .adjustment(&gtk::Adjustment::new(12.0, 8.0, 24.0, 1.0, 2.0, 0.0))
+        .value(settings.borrow().editor_font_size as f64)
+        .build();
+    {
+        let settings = settings.clone();
+        let editor = editor.clone();
+        font_size_row.connect_value_notify(move |row| {
+            let size = row.value() as u32;
+            settings.borrow_mut().editor_font_size = size;
+            settings.borrow().save();
+            let font = settings.borrow().editor_font.clone();
+            editor.set_font(&font, size);
+        });
+    }
+    font_group.add(&font_size_row);
+
+    editor_page.add(&font_group);
 
     // View page
     let view_page = PreferencesPage::builder()
@@ -196,13 +255,12 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
         .title("Theme")
         .subtitle("Choose your preferred theme")
         .build();
-    let theme_model = gtk::StringList::new(&["System", "Light", "Dark", "Sepia"]);
+    let theme_model = gtk::StringList::new(&["System", "Light", "Dark"]);
     theme_row.set_model(Some(&theme_model));
     let current = match settings.borrow().theme {
         ThemeMode::System => 0,
         ThemeMode::Light => 1,
         ThemeMode::Dark => 2,
-        ThemeMode::Sepia => 3,
     };
     theme_row.set_selected(current as u32);
     {
@@ -212,11 +270,22 @@ pub fn show_settings(parent: &impl IsA<gtk::Window>, settings: &Rc<RefCell<AppSe
             let theme = match idx {
                 1 => ThemeMode::Light,
                 2 => ThemeMode::Dark,
-                3 => ThemeMode::Sepia,
                 _ => ThemeMode::System,
             };
-            settings.borrow_mut().theme = theme;
+            settings.borrow_mut().theme = theme.clone();
             settings.borrow().save();
+            let style_manager = adw::StyleManager::default();
+            match theme {
+                ThemeMode::Light => {
+                    style_manager.set_color_scheme(adw::ColorScheme::ForceLight);
+                }
+                ThemeMode::Dark => {
+                    style_manager.set_color_scheme(adw::ColorScheme::ForceDark);
+                }
+                ThemeMode::System => {
+                    style_manager.set_color_scheme(adw::ColorScheme::Default);
+                }
+            }
         });
     }
     theme_group.add(&theme_row);

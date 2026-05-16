@@ -63,9 +63,6 @@ impl MinimalMarkApp {
             ThemeMode::Dark => {
                 style_manager.set_color_scheme(adw::ColorScheme::ForceDark);
             }
-            ThemeMode::Sepia => {
-                style_manager.set_color_scheme(adw::ColorScheme::ForceLight);
-            }
             ThemeMode::System => {
                 style_manager.set_color_scheme(adw::ColorScheme::Default);
             }

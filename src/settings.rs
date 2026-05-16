@@ -6,7 +6,6 @@ use std::path::PathBuf;
 pub enum ThemeMode {
     Light,
     Dark,
-    Sepia,
     System,
 }
 

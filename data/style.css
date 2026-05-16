@@ -253,41 +253,6 @@ window.dark preferenceswindow {
     background: #2C2C2E;
 }
 
-/* Sepia Theme */
-window.sepia headerbar {
-    background: linear-gradient(180deg, #F0E6D0 0%, #E8DCC4 100%);
-    border-bottom: 1px solid #D4C5A9;
-}
-
-window.sepia textview {
-    background: #FAF4E8;
-    color: #5C3D2E;
-}
-
-window.sepia textview selection {
-    background: #A65D2C33;
-}
-
-window.sepia .sidebar {
-    background: #F4ECD8;
-    border-right: 1px solid #DDD0BA;
-}
-
-window.sepia .statusbar {
-    background: #F0E6D0;
-    border-top: 1px solid #DDD0BA;
-    color: #8B6914;
-}
-
-window.sepia .ctx-menu {
-    background: rgba(250, 244, 232, 0.95);
-    border: 1px solid #D4C5A9;
-}
-
-window.sepia button:hover {
-    background: rgba(166, 93, 44, 0.1);
-}
-
 /* Focus Mode - dim non-active content */
 .focus-dim {
     opacity: 0.3;

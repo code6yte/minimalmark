@@ -402,14 +402,43 @@ impl EditorPane {
         if let Some((start, end)) = buffer.selection_bounds() {
             let start_off = start.offset();
             let end_off = end.offset();
-            buffer.insert(&mut buffer.iter_at_offset(end_off), after);
-            buffer.insert(&mut buffer.iter_at_offset(start_off), before);
+            let selected_text = buffer.text(&start, &end, false);
+            let new_text = format!("{}{}{}", before, selected_text, after);
+            let mut start_iter = buffer.iter_at_offset(start_off);
+            let mut end_iter = buffer.iter_at_offset(end_off);
+            buffer.delete(&mut start_iter, &mut end_iter);
+            let mut insert_iter = buffer.iter_at_offset(start_off);
+            buffer.insert(&mut insert_iter, &new_text);
+            let new_start = buffer.iter_at_offset(start_off);
+            let new_end = buffer.iter_at_offset(start_off + before.len() as i32 + selected_text.len() as i32);
+            buffer.select_range(&new_start, &new_end);
         } else {
             let insert_mark = buffer.get_insert();
             let pos = buffer.iter_at_mark(&insert_mark).offset();
             buffer.insert(&mut buffer.iter_at_offset(pos), before);
-            buffer.insert(&mut buffer.iter_at_offset(pos + before.len()), after);
+            buffer.insert(&mut buffer.iter_at_offset(pos + before.len() as i32), after);
+            let cursor_pos = pos + before.len() as i32;
+            buffer.place_cursor(&buffer.iter_at_offset(cursor_pos));
         }
+    }
+
+    pub fn save_to_file(&self, path: &str) -> bool {
+        let text = self.buffer.text(&self.buffer.start_iter(), &self.buffer.end_iter(), false);
+        let file = gio::File::for_path(path);
+        match file.replace_contents(
+            text.as_bytes(),
+            None,
+            false,
+            gio::FileCreateFlags::REPLACE_DESTINATION,
+            gio::Cancellable::NONE,
+        ) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    pub fn save_current_file(&self, path: &str) -> bool {
+        self.save_to_file(path)
     }
 
     pub fn insert_at_line_start(&self, prefix: &str) {
@@ -432,7 +461,6 @@ impl EditorPane {
                     popover.set_parent(&w);
                 }
             }
-            popover.popdown();
             popover.popup();
         });
         self.view.add_controller(gesture);
