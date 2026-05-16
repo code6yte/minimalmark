@@ -424,7 +424,7 @@ impl EditorPane {
             popover.set_pointing_to(Some(&rect));
             if popover.parent().is_none() {
                 if let Some(w) = g.widget() {
-                    popover.set_parent(w);
+                    popover.set_parent(&w);
                 }
             }
             popover.popup();
