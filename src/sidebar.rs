@@ -12,6 +12,7 @@ impl Sidebar {
         let container = GtkBox::builder()
             .orientation(Orientation::Vertical)
             .width_request(200)
+            .height_request(100)
             .build();
         container.add_css_class("sidebar");
 

@@ -391,27 +391,32 @@ impl EditorPane {
 
     pub fn insert_text(&self, text: &str) {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
-        let mut iter = self.get_cursor_iter();
+        let insert_mark = buffer.get_insert();
+        let pos = buffer.iter_at_mark(&insert_mark).offset();
+        let mut iter = buffer.iter_at_offset(pos);
         buffer.insert(&mut iter, text);
     }
 
     pub fn insert_around_selection(&self, before: &str, after: &str) {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
         if let Some((start, end)) = buffer.selection_bounds() {
-            buffer.insert(&mut end.clone(), after);
-            buffer.insert(&mut start.clone(), before);
+            let start_off = start.offset();
+            let end_off = end.offset();
+            buffer.insert(&mut buffer.iter_at_offset(end_off), after);
+            buffer.insert(&mut buffer.iter_at_offset(start_off), before);
         } else {
-            let mut iter = self.get_cursor_iter();
-            buffer.insert(&mut iter, before);
-            buffer.insert(&mut iter, after);
+            let insert_mark = buffer.get_insert();
+            let pos = buffer.iter_at_mark(&insert_mark).offset();
+            buffer.insert(&mut buffer.iter_at_offset(pos), before);
+            buffer.insert(&mut buffer.iter_at_offset(pos + before.len()), after);
         }
     }
 
     pub fn insert_at_line_start(&self, prefix: &str) {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
         let cursor_iter = self.get_cursor_iter();
-        let mut line_start = cursor_iter;
-        line_start.set_line_index(0);
+        let line_num = cursor_iter.line();
+        let mut line_start = buffer.iter_at_line_index(line_num, 0);
         buffer.insert(&mut line_start, prefix);
     }
 
@@ -427,6 +432,7 @@ impl EditorPane {
                     popover.set_parent(&w);
                 }
             }
+            popover.popdown();
             popover.popup();
         });
         self.view.add_controller(gesture);
