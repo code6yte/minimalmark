@@ -227,7 +227,7 @@ impl PreviewPane {
                     self.buffer.insert(&mut self.buffer.end_iter(), "\n─────────────────────\n");
                 }
                 Event::FootnoteReference(_) | Event::TaskListMarker(..) => {}
-                Event::Html(_) => {
+                Event::Html(_) | Event::InlineHtml(_) => {
                     // HTML is stripped
                 }
                 Event::InlineMath(_) | Event::DisplayMath(_) => {}
