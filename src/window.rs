@@ -149,10 +149,8 @@ impl MainWindow {
             .wide_handle(false)
             .build();
         paned.set_start_child(Some(&editor_scroll));
-        paned.set_end_child(Some(&preview_scroll));
         paned.set_position(600);
-        // Live mode default: drop preview
-        paned.set_end_child(Option::<&gtk::Widget>::None);
+        // Live mode default: no end child; added by split button toggle
 
         content_box.append(&paned);
 
