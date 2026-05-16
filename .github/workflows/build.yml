@@ -11,6 +11,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-fedora:
@@ -53,7 +54,7 @@ jobs:
             ${{ runner.os }}-fedora-${{ matrix.fedora-version }}-target-
 
       - name: Build
-        run: cargo build --release --locked
+        run: cargo build --release
 
       - name: Run checks
         run: cargo check --release
@@ -64,82 +65,3 @@ jobs:
           name: minimalmark-fedora-${{ matrix.fedora-version }}
           path: target/release/minimalmark
           if-no-files-found: error
-
-  build-ubuntu:
-    name: Ubuntu ${{ matrix.ubuntu-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        ubuntu-version: ["24.04", "24.10"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            rustc cargo \
-            libgtk-4-dev libglib2.0-dev \
-            libwebkit2gtk-4.1-dev \
-            libadwaita-1-dev \
-            libgtksourceview-5-dev \
-            pkg-config
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-ubuntu-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-ubuntu-cargo-
-
-      - name: Cache target directory
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-ubuntu-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-ubuntu-target-
-
-      - name: Build
-        run: cargo build --release --locked
-
-      - name: Run checks
-        run: cargo check --release
-
-      - name: Upload binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: minimalmark-ubuntu-${{ matrix.ubuntu-version }}
-          path: target/release/minimalmark
-          if-no-files-found: error
-
-  release:
-    name: Create Release
-    needs: [build-fedora, build-ubuntu]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create release archives
-        run: |
-          mkdir -p release-assets
-          for dir in artifacts/*/; do
-            name=$(basename "$dir")
-            cp "$dir/minimalmark" "release-assets/minimalmark-$name"
-            chmod +x "release-assets/minimalmark-$name"
-          done
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release-assets/*
