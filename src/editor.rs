@@ -1,4 +1,4 @@
-use gtk::prelude::Cast;
+use gtk::prelude::{Cast, TextBufferExt};
 use sourceview5::{LanguageManager, Buffer, View, StyleSchemeManager};
 use sourceview5::prelude::{BufferExt, ViewExt};
 
