@@ -51,23 +51,31 @@ impl MainWindow {
 
         let header = gtk::HeaderBar::new();
 
+        let new_icon = gtk::Image::from_icon_name("document-new-symbolic");
+        new_icon.set_pixel_size(16);
         let new_btn = gtk::Button::new();
-        new_btn.set_child(Some(&gtk::Image::from_icon_name("document-new-symbolic").pixel_size(16)));
+        new_btn.set_child(Some(&new_icon));
         new_btn.set_tooltip_text(Some("New (Ctrl+N)"));
         header.pack_start(&new_btn);
 
+        let open_icon = gtk::Image::from_icon_name("document-open-symbolic");
+        open_icon.set_pixel_size(16);
         let open_btn = gtk::Button::new();
-        open_btn.set_child(Some(&gtk::Image::from_icon_name("document-open-symbolic").pixel_size(16)));
+        open_btn.set_child(Some(&open_icon));
         open_btn.set_tooltip_text(Some("Open (Ctrl+O)"));
         header.pack_start(&open_btn);
 
+        let save_icon = gtk::Image::from_icon_name("document-save-symbolic");
+        save_icon.set_pixel_size(16);
         let save_btn = gtk::Button::new();
-        save_btn.set_child(Some(&gtk::Image::from_icon_name("document-save-symbolic").pixel_size(16)));
+        save_btn.set_child(Some(&save_icon));
         save_btn.set_tooltip_text(Some("Save (Ctrl+S)"));
         header.pack_end(&save_btn);
 
+        let settings_icon = gtk::Image::from_icon_name("emblem-system-symbolic");
+        settings_icon.set_pixel_size(16);
         let settings_btn = gtk::Button::new();
-        settings_btn.set_child(Some(&gtk::Image::from_icon_name("emblem-system-symbolic").pixel_size(16)));
+        settings_btn.set_child(Some(&settings_icon));
         settings_btn.set_tooltip_text(Some("Settings (Ctrl+,)"));
         header.pack_end(&settings_btn);
 
