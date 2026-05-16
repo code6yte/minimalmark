@@ -40,12 +40,12 @@ impl MainWindow {
         let editor_scroll = ScrolledWindow::new();
         editor_scroll.set_hexpand(true);
         editor_scroll.set_vexpand(true);
-        editor_scroll.set_child(Some(&editor.view()));
+        editor_scroll.set_child(Some(editor.view().upcast_ref()));
 
         let preview_scroll = ScrolledWindow::new();
         preview_scroll.set_hexpand(true);
         preview_scroll.set_vexpand(true);
-        preview_scroll.set_child(Some(&preview.widget()));
+        preview_scroll.set_child(Some(preview.widget().upcast_ref()));
 
         let paned = Paned::builder()
             .orientation(Orientation::Horizontal)

@@ -105,25 +105,29 @@ impl EditorPane {
     }
 
     pub fn insert_text(&self, text: &str) {
-        let mut iter = self.buffer.cursor_iter();
-        self.buffer.insert(&mut iter, text);
+        let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
+        let insert_mark = buffer.insert_mark();
+        let mut iter = buffer.iter_at_mark(&insert_mark);
+        buffer.insert(&mut iter, text);
     }
 
     pub fn insert_around_selection(&self, before: &str, after: &str) {
-        let buffer = &self.buffer;
+        let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
         if let Some((start, end)) = buffer.selection_bounds() {
             buffer.insert(&mut end.clone(), after);
             buffer.insert(&mut start.clone(), before);
         } else {
-            let mut iter = buffer.cursor_iter();
+            let insert_mark = buffer.insert_mark();
+            let mut iter = buffer.iter_at_mark(&insert_mark);
             buffer.insert(&mut iter, before);
             buffer.insert(&mut iter, after);
         }
     }
 
     pub fn insert_at_line_start(&self, prefix: &str) {
-        let buffer = &self.buffer;
-        let cursor_iter = buffer.cursor_iter();
+        let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
+        let insert_mark = buffer.insert_mark();
+        let cursor_iter = buffer.iter_at_mark(&insert_mark);
         let mut line_start = cursor_iter;
         line_start.set_line_index(0);
         buffer.insert(&mut line_start, prefix);

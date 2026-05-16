@@ -1,6 +1,6 @@
 use gtk::prelude::*;
-use gtk::{Application, Orientation};
-use adw::{ApplicationWindow, StyleManager};
+use gtk::{Application};
+use adw::{ApplicationWindow, StyleManager, prelude::AdwApplicationWindowExt};
 
 use crate::window::MainWindow;
 
@@ -53,7 +53,7 @@ impl MinimalMarkApp {
     }
 
     fn build_ui(app: &Application) {
-        let style_manager = StyleManager::new();
+        let style_manager = StyleManager::default();
         let is_dark = style_manager.is_dark();
 
         let window = ApplicationWindow::builder()
@@ -69,7 +69,7 @@ impl MinimalMarkApp {
     }
 
     fn build_ui_with_file(app: &Application, file: &gio::File) {
-        let style_manager = StyleManager::new();
+        let style_manager = StyleManager::default();
         let is_dark = style_manager.is_dark();
 
         let title = file.basename()
