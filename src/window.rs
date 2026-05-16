@@ -291,9 +291,9 @@ impl MainWindow {
             settingsdialog::show_settings(&window_clone, &settings_clone2);
         });
 
-        // Context menu - TEMPORARILY DISABLED FOR DEBUGGING
-        // let ctx_popover = build_context_menu(&editor);
-        // editor.setup_context_menu(ctx_popover.clone());
+        // Context menu
+        let ctx_popover = build_context_menu(&editor);
+        editor.setup_context_menu(ctx_popover.clone());
 
         // Keyboard shortcuts
         let window_clone = window.clone();

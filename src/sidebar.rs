@@ -76,10 +76,8 @@ impl Sidebar {
             }
         }
 
-        // Clear existing items
-        while let Some(child) = self.outline_list.first_child() {
-            child.unparent();
-        }
+        // Clear existing items using proper ListBox API
+        self.outline_list.remove_all();
 
         if headings.is_empty() {
             let placeholder = Label::builder()
