@@ -3,6 +3,7 @@ use gtk::prelude::*;
 use gtk::{Box as GtkBox, Orientation, ScrolledWindow, Paned, EventControllerKey, ToggleButton, SearchEntry};
 use adw::ApplicationWindow;
 use std::cell::Cell;
+use std::rc::Rc;
 
 use crate::editor::EditorPane;
 use crate::preview::PreviewPane;
@@ -153,14 +154,14 @@ impl MainWindow {
 
         // View mode toggling
         let paned = paned.clone();
-        let mode = Cell::new(ViewMode::Split);
+        let mode = Rc::new(Cell::new(ViewMode::Split));
 
         editor_mode_btn.connect_toggled({
             let paned = paned.clone();
             let editor_scroll = editor_scroll.clone();
-            let preview_scroll = preview_scroll.clone();
             let pmode = preview_mode_btn.clone();
             let smode = split_mode_btn.clone();
+            let mode = mode.clone();
             move |btn| {
                 if btn.is_active() {
                     mode.set(ViewMode::Editor);
@@ -173,10 +174,10 @@ impl MainWindow {
 
         preview_mode_btn.connect_toggled({
             let paned = paned.clone();
-            let editor_scroll = editor_scroll.clone();
             let preview_scroll = preview_scroll.clone();
             let emode = editor_mode_btn.clone();
             let smode = split_mode_btn.clone();
+            let mode = mode.clone();
             move |btn| {
                 if btn.is_active() {
                     mode.set(ViewMode::Preview);
@@ -198,6 +199,7 @@ impl MainWindow {
             let preview_scroll = preview_scroll.clone();
             let emode = editor_mode_btn.clone();
             let pmode = preview_mode_btn.clone();
+            let mode = mode.clone();
             move |btn| {
                 if btn.is_active() {
                     mode.set(ViewMode::Split);
