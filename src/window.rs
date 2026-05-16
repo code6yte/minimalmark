@@ -174,6 +174,7 @@ impl MainWindow {
 
         preview_mode_btn.connect_toggled({
             let paned = paned.clone();
+            let editor_scroll = editor_scroll.clone();
             let preview_scroll = preview_scroll.clone();
             let emode = editor_mode_btn.clone();
             let smode = split_mode_btn.clone();
