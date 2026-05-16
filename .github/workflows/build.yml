@@ -15,13 +15,9 @@ env:
 
 jobs:
   build-fedora:
-    name: Fedora ${{ matrix.fedora-version }}
+    name: Fedora 44
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        fedora-version: ["40", "41"]
-    container: fedora:${{ matrix.fedora-version }}
+    container: fedora:44
     steps:
       - uses: actions/checkout@v4
 
@@ -45,15 +41,15 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: fedora-${{ matrix.fedora-version }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: fedora-${{ matrix.fedora-version }}-cargo-
+          key: fedora-44-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: fedora-44-cargo-
 
       - name: Cache target directory
         uses: actions/cache@v4
         with:
           path: target
-          key: fedora-${{ matrix.fedora-version }}-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: fedora-${{ matrix.fedora-version }}-target-
+          key: fedora-44-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: fedora-44-target-
 
       - name: Build
         run: |
@@ -68,6 +64,6 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: minimalmark-fedora-${{ matrix.fedora-version }}
+          name: minimalmark-fedora-44
           path: target/release/minimalmark
           if-no-files-found: error
