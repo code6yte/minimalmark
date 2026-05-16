@@ -18,8 +18,8 @@ use std::cell::RefCell;
 
 #[derive(Clone, Copy, PartialEq)]
 enum ViewMode {
-    Source,
-    Live,
+    Editor,
+    Preview,
     Split,
 }
 
@@ -74,46 +74,34 @@ impl MainWindow {
             .build();
         header.pack_end(&search_btn);
 
-        let split_btn = ToggleButton::builder()
-            .icon_name("view-split-left-right-symbolic")
-            .tooltip_text("Split (preview pane)")
-            .build();
-        header.pack_end(&split_btn);
-
-        let live_btn = ToggleButton::builder()
-            .icon_name("document-preview-symbolic")
-            .tooltip_text("Live Preview (inline)")
-            .active(true)
-            .build();
-        header.pack_end(&live_btn);
-
-        let source_btn = ToggleButton::builder()
+        let editor_mode_btn = ToggleButton::builder()
             .icon_name("document-edit-symbolic")
-            .tooltip_text("Source (plain edit)")
+            .tooltip_text("Editor")
             .build();
-        header.pack_end(&source_btn);
+        header.pack_end(&editor_mode_btn);
 
-        // Sidebar toggle
-        let sidebar_show = Rc::new(Cell::new(true));
-        let sidebar_toggle = ToggleButton::builder()
-            .icon_name("format-justify-left-symbolic")
-            .tooltip_text("Toggle Outline")
+        let preview_mode_btn = ToggleButton::builder()
+            .icon_name("document-preview-symbolic")
+            .tooltip_text("Preview")
+            .build();
+        header.pack_end(&preview_mode_btn);
+
+        let split_mode_btn = ToggleButton::builder()
+            .icon_name("view-split-left-right-symbolic")
+            .tooltip_text("Split")
             .active(true)
             .build();
-        header.pack_start(&sidebar_toggle);
+        header.pack_end(&split_mode_btn);
 
         let main_box = GtkBox::builder()
             .orientation(Orientation::Horizontal)
             .build();
 
         let sidebar = Sidebar::new();
+        main_box.append(sidebar.container());
+
         let separator = gtk::Separator::new(Orientation::Vertical);
-        let sidebar_container = GtkBox::builder()
-            .orientation(Orientation::Horizontal)
-            .build();
-        sidebar_container.append(sidebar.container());
-        sidebar_container.append(&separator);
-        main_box.append(&sidebar_container);
+        main_box.append(&separator);
 
         let content_box = GtkBox::builder()
             .orientation(Orientation::Vertical)
@@ -149,8 +137,8 @@ impl MainWindow {
             .wide_handle(false)
             .build();
         paned.set_start_child(Some(&editor_scroll));
+        paned.set_end_child(Some(&preview_scroll));
         paned.set_position(600);
-        // Live mode default: no end child; added by split button toggle
 
         content_box.append(&paned);
 
@@ -196,75 +184,65 @@ impl MainWindow {
         container.append(&main_box);
 
         // View mode toggling
-        let mode = Rc::new(Cell::new(ViewMode::Live));
+        let mode = Rc::new(Cell::new(ViewMode::Split));
 
-        source_btn.connect_toggled({
+        editor_mode_btn.connect_toggled({
             let paned = paned_for_toggle.clone();
-            let live = live_btn.clone();
-            let split = split_btn.clone();
+            let pmode = preview_mode_btn.clone();
+            let smode = split_mode_btn.clone();
             let mode = mode.clone();
-            let editor = editor.clone();
             move |btn| {
                 if btn.is_active() {
-                    mode.set(ViewMode::Source);
-                    live.set_active(false);
-                    split.set_active(false);
+                    mode.set(ViewMode::Editor);
+                    pmode.set_active(false);
+                    smode.set_active(false);
                     paned.set_end_child(Option::<&gtk::Widget>::None);
-                    editor.set_source_view(true);
                 }
             }
         });
 
-        live_btn.connect_toggled({
-            let paned = paned_for_toggle.clone();
-            let editor_scroll = editor_scroll_for_toggle.clone();
-            let src = source_btn.clone();
-            let split = split_btn.clone();
-            let mode = mode.clone();
-            let editor = editor.clone();
-            move |btn| {
-                if btn.is_active() {
-                    mode.set(ViewMode::Live);
-                    src.set_active(false);
-                    split.set_active(false);
-                    paned.set_start_child(Some(&editor_scroll));
-                    paned.set_end_child(Option::<&gtk::Widget>::None);
-                    editor.set_source_view(false);
-                }
-            }
-        });
-
-        split_btn.connect_toggled({
+        preview_mode_btn.connect_toggled({
             let paned = paned_for_toggle.clone();
             let editor_scroll = editor_scroll_for_toggle.clone();
             let preview_scroll = preview_scroll_for_toggle.clone();
-            let src = source_btn.clone();
-            let live = live_btn.clone();
+            let emode = editor_mode_btn.clone();
+            let smode = split_mode_btn.clone();
             let mode = mode.clone();
-            let editor = editor.clone();
             move |btn| {
                 if btn.is_active() {
-                    mode.set(ViewMode::Split);
-                    src.set_active(false);
-                    live.set_active(false);
+                    mode.set(ViewMode::Preview);
+                    emode.set_active(false);
+                    smode.set_active(false);
+                    paned.set_start_child(Option::<&gtk::Widget>::None);
+                    paned.set_end_child(Some(&preview_scroll));
+                } else if mode.get() == ViewMode::Preview {
                     paned.set_start_child(Some(&editor_scroll));
                     paned.set_end_child(Some(&preview_scroll));
-                    editor.set_source_view(false);
-                } else if mode.get() == ViewMode::Split {
-                    mode.set(ViewMode::Live);
-                    live.set_active(true);
-                    paned.set_end_child(Option::<&gtk::Widget>::None);
+                    mode.set(ViewMode::Split);
+                    smode.set_active(true);
                 }
             }
         });
 
-        // Sidebar toggle
-        sidebar_toggle.connect_toggled({
-            let sidebar_container = sidebar_container.clone();
-            let sidebar_show = sidebar_show.clone();
+        split_mode_btn.connect_toggled({
+            let paned = paned_for_toggle.clone();
+            let editor_scroll = editor_scroll_for_toggle.clone();
+            let preview_scroll = preview_scroll_for_toggle.clone();
+            let emode = editor_mode_btn.clone();
+            let pmode = preview_mode_btn.clone();
+            let mode = mode.clone();
             move |btn| {
-                sidebar_container.set_visible(btn.is_active());
-                sidebar_show.set(btn.is_active());
+                if btn.is_active() {
+                    mode.set(ViewMode::Split);
+                    emode.set_active(false);
+                    pmode.set_active(false);
+                    paned.set_start_child(Some(&editor_scroll));
+                    paned.set_end_child(Some(&preview_scroll));
+                } else if mode.get() == ViewMode::Split {
+                    mode.set(ViewMode::Editor);
+                    emode.set_active(true);
+                    paned.set_end_child(Option::<&gtk::Widget>::None);
+                }
             }
         });
 
