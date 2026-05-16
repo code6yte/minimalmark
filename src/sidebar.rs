@@ -125,16 +125,16 @@ impl Sidebar {
     pub fn italic_button(&self) -> &Button { &self.buttons[1] }
     pub fn strike_button(&self) -> &Button { &self.buttons[2] }
     pub fn code_button(&self) -> &Button { &self.buttons[3] }
-    pub fn h1_button(&self) -> &Button { &self.buttons[5] }
-    pub fn h2_button(&self) -> &Button { &self.buttons[6] }
-    pub fn h3_button(&self) -> &Button { &self.buttons[7] }
-    pub fn ul_button(&self) -> &Button { &self.buttons[9] }
-    pub fn ol_button(&self) -> &Button { &self.buttons[10] }
-    pub fn task_button(&self) -> &Button { &self.buttons[11] }
-    pub fn link_button(&self) -> &Button { &self.buttons[13] }
-    pub fn image_button(&self) -> &Button { &self.buttons[14] }
-    pub fn quote_button(&self) -> &Button { &self.buttons[15] }
-    pub fn table_button(&self) -> &Button { &self.buttons[16] }
-    pub fn codeblock_button(&self) -> &Button { &self.buttons[18] }
-    pub fn hr_button(&self) -> &Button { &self.buttons[19] }
+    pub fn h1_button(&self) -> &Button { &self.buttons[4] }
+    pub fn h2_button(&self) -> &Button { &self.buttons[5] }
+    pub fn h3_button(&self) -> &Button { &self.buttons[6] }
+    pub fn ul_button(&self) -> &Button { &self.buttons[7] }
+    pub fn ol_button(&self) -> &Button { &self.buttons[8] }
+    pub fn task_button(&self) -> &Button { &self.buttons[9] }
+    pub fn link_button(&self) -> &Button { &self.buttons[10] }
+    pub fn image_button(&self) -> &Button { &self.buttons[11] }
+    pub fn quote_button(&self) -> &Button { &self.buttons[12] }
+    pub fn table_button(&self) -> &Button { &self.buttons[13] }
+    pub fn codeblock_button(&self) -> &Button { &self.buttons[14] }
+    pub fn hr_button(&self) -> &Button { &self.buttons[15] }
 }
