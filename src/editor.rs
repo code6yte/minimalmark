@@ -416,7 +416,6 @@ impl EditorPane {
     }
 
     pub fn setup_context_menu(&self, popover: gtk::Popover) {
-        popover.set_parent(self.view.upcast_ref::<gtk::Widget>());
         use gtk::GestureClick;
         let gesture = GestureClick::new();
         gesture.set_button(3);
