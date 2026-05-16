@@ -1,6 +1,7 @@
 use gtk::prelude::*;
 use gtk::{TextBuffer, TextView};
 use sourceview5::{LanguageManager, Buffer, View, StyleSchemeManager};
+use sourceview5::prelude::{BufferExt, ViewExt};
 
 #[derive(Clone)]
 pub struct EditorPane {
@@ -19,7 +20,7 @@ impl EditorPane {
         }
 
         let scheme_manager = StyleSchemeManager::default();
-        if let Ok(scheme) = scheme_manager.scheme("Adwaita") {
+        if let Some(scheme) = scheme_manager.scheme("Adwaita") {
             buffer.set_style_scheme(Some(&scheme));
         }
 
@@ -104,7 +105,7 @@ impl EditorPane {
     }
 
     pub fn insert_text(&self, text: &str) {
-        let mut iter = self.buffer.place_cursor_iter();
+        let mut iter = self.buffer.cursor_iter();
         self.buffer.insert(&mut iter, text);
     }
 
@@ -114,7 +115,7 @@ impl EditorPane {
             buffer.insert(&mut end.clone(), after);
             buffer.insert(&mut start.clone(), before);
         } else {
-            let mut iter = buffer.place_cursor_iter();
+            let mut iter = buffer.cursor_iter();
             buffer.insert(&mut iter, before);
             buffer.insert(&mut iter, after);
         }
@@ -122,7 +123,7 @@ impl EditorPane {
 
     pub fn insert_at_line_start(&self, prefix: &str) {
         let buffer = &self.buffer;
-        let cursor_iter = buffer.place_cursor_iter();
+        let cursor_iter = buffer.cursor_iter();
         let mut line_start = cursor_iter;
         line_start.set_line_index(0);
         buffer.insert(&mut line_start, prefix);

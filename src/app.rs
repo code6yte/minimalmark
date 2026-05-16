@@ -42,7 +42,7 @@ impl MinimalMarkApp {
         app.run()
     }
 
-    fn setup_css(app: &Application) {
+    fn setup_css(_app: &Application) {
         let provider = gtk::CssProvider::new();
         provider.load_from_string(include_str!("../data/style.css"));
         gtk::style_context_add_provider_for_display(

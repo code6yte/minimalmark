@@ -60,24 +60,22 @@ impl MainWindow {
         container.append(&paned);
         container.append(statusbar.container());
 
-        let editor_clone = editor.clone();
         let preview_clone = preview.clone();
         let statusbar_clone = statusbar.clone();
-        editor.buffer().connect_contents_changed(move |buffer| {
+        editor.buffer().connect_changed(move |buffer| {
             let text = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false);
-            let result = render_markdown(&text);
-            preview_clone.update(&result.html, result.has_math, result.has_mermaid);
+            let html = render_markdown(&text);
+            preview_clone.update(&html);
             
             let (words, chars, _, _, reading_time) = count_stats(&text);
             statusbar_clone.update_stats(words, chars, reading_time);
         });
 
-        let editor_clone_for_cursor = editor.clone();
         let statusbar_clone_for_cursor = statusbar.clone();
         editor.buffer().connect_mark_set(move |_buffer, iter, _| {
             let line = iter.line() + 1;
             let col = iter.line_index() + 1;
-            statusbar_clone_for_cursor.update_cursor(line, col);
+            statusbar_clone_for_cursor.update_cursor(line as usize, col as usize);
         });
 
         let window_clone = window.clone();
@@ -93,8 +91,8 @@ impl MainWindow {
         }
 
         let text = editor.buffer().text(&editor.buffer().start_iter(), &editor.buffer().end_iter(), false);
-        let result = render_markdown(&text);
-        preview.update(&result.html, result.has_math, result.has_mermaid);
+        let html = render_markdown(&text);
+        preview.update(&html);
         
         let (words, chars, _, _, reading_time) = count_stats(&text);
         statusbar.update_stats(words, chars, reading_time);

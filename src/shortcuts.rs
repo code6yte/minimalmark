@@ -1,4 +1,3 @@
-use gtk::prelude::*;
 use gtk::{EventControllerKey, glib};
 
 pub fn setup_shortcuts(
