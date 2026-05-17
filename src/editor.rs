@@ -445,7 +445,7 @@ impl EditorPane {
         let buffer = self.buffer.upcast_ref::<gtk::TextBuffer>();
         let cursor_iter = self.get_cursor_iter();
         let line_num = cursor_iter.line();
-        let mut line_start = buffer.iter_at_line_index(line_num, 0);
+        let mut line_start = buffer.iter_at_line_index(line_num, 0).unwrap();
         buffer.insert(&mut line_start, prefix);
     }
 

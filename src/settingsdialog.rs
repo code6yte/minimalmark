@@ -135,10 +135,12 @@ pub fn show_settings(
     font_row.set_model(Some(&font_model));
     let current_font = settings.borrow().editor_font.clone();
     let mut font_idx = 0u32;
-    for (i, font) in font_model.iter().enumerate() {
-        if font.to_string() == current_font {
-            font_idx = i as u32;
-            break;
+    for i in 0..font_model.n_items() {
+        if let Some(font) = font_model.string(i) {
+            if font.to_string() == current_font {
+                font_idx = i;
+                break;
+            }
         }
     }
     font_row.set_selected(font_idx);
