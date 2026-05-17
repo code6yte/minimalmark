@@ -7,25 +7,29 @@ use std::cell::RefCell;
 
 fn get_local_monospace_fonts() -> Vec<String> {
     let mut fonts = Vec::new();
-    let ctx = fontconfig::FontConfig::new();
-    if let Ok(pattern) = ctx.pattern_new() {
-        let _ = pattern.add_string("spacing", "mono");
-        let _ = pattern.add_string("scalable", "true");
-        if let Ok(mut set) = ctx.list(pattern) {
-            let count = set.len();
-            for i in 0..count {
-                if let Ok(pattern) = set.get(i) {
-                    if let Ok(family) = pattern.get_string("family") {
-                        if !family.is_empty() && !fonts.contains(&family) {
-                            fonts.push(family);
-                            if fonts.len() >= 50 {
-                                break;
+    match fontconfig::FontConfig::new() {
+        Ok(fc) => {
+            if let Ok(pattern) = fc.pattern_new() {
+                let _ = pattern.add_string("spacing", "mono");
+                let _ = pattern.add_string("scalable", "true");
+                if let Ok(mut set) = fc.list(pattern) {
+                    let count = set.len();
+                    for i in 0..count {
+                        if let Ok(pattern) = set.get(i) {
+                            if let Ok(family) = pattern.get_string("family") {
+                                if !family.is_empty() && !fonts.contains(&family) {
+                                    fonts.push(family);
+                                    if fonts.len() >= 50 {
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        Err(_) => {}
     }
     if fonts.is_empty() {
         fonts.push("monospace".to_string());
