@@ -14,6 +14,7 @@ pub fn setup_shortcuts(
             // Formatting
             (true, false, false, gtk::gdk::Key::b) => Some("bold"),
             (true, false, false, gtk::gdk::Key::i) => Some("italic"),
+            (true, false, false, gtk::gdk::Key::u) => Some("underline"),
             (true, true, false, gtk::gdk::Key::x) => Some("strikethrough"),
             (true, false, false, gtk::gdk::Key::l) => Some("link"),
             (true, true, false, gtk::gdk::Key::c) => Some("inline_code"),

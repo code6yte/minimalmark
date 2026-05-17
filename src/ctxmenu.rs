@@ -51,6 +51,10 @@ pub fn build_context_menu(editor: &EditorPane) -> Popover {
     }
     {
         let e = editor.clone();
+        vbox.append(&menu_btn("Underline  Ctrl+U", "Underline", move || e.insert_around_selection("<u>", "</u>")));
+    }
+    {
+        let e = editor.clone();
         vbox.append(&menu_btn("Strikethrough  Ctrl+Shift+X", "Strikethrough", move || e.insert_around_selection("~~", "~~")));
     }
     {
@@ -90,6 +94,10 @@ pub fn build_context_menu(editor: &EditorPane) -> Popover {
     {
         let e = editor.clone();
         vbox.append(&menu_btn("Task List", "Task List", move || e.insert_at_line_start("- [ ] ")));
+    }
+    {
+        let e = editor.clone();
+        vbox.append(&menu_btn("Checkbox (checked)", "Checked Checkbox", move || e.insert_at_line_start("- [x] ")));
     }
 
     vbox.append(&Separator::new(Orientation::Horizontal));

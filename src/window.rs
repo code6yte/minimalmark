@@ -53,6 +53,14 @@ impl MainWindow {
 
         let header = gtk::HeaderBar::new();
 
+        // Sidebar toggle button
+        let sidebar_toggle = ToggleButton::builder()
+            .icon_name("sidebar-show-symbolic")
+            .tooltip_text("Toggle Outline")
+            .active(true)
+            .build();
+        header.pack_start(&sidebar_toggle);
+
         // View mode stack switcher
         let stack_switcher = StackSwitcher::builder()
             .build();
@@ -60,8 +68,26 @@ impl MainWindow {
 
         // Settings button
         let settings_btn = gtk::Button::from_icon_name("emblem-system-symbolic");
-        settings_btn.set_tooltip_text(Some("Preferences (Ctrl+,)"));
+        settings_btn.set_tooltip_text(Some("Preferences"));
         header.pack_end(&settings_btn);
+
+        // Menu button (hamburger)
+        let menu_button = gtk::MenuButton::builder()
+            .icon_name("open-menu-symbolic")
+            .tooltip_text("Menu")
+            .build();
+        let menu_popover = gtk::Popover::new();
+        let menu_box = GtkBox::builder()
+            .orientation(Orientation::Vertical)
+            .spacing(2)
+            .margin_start(6)
+            .margin_end(6)
+            .margin_top(6)
+            .margin_bottom(6)
+            .build();
+        menu_popover.set_child(Some(&menu_box));
+        menu_button.set_popover(Some(&menu_popover));
+        header.pack_end(&menu_button);
 
         let main_box = GtkBox::builder()
             .orientation(Orientation::Horizontal)
@@ -155,6 +181,18 @@ impl MainWindow {
         let mode = Rc::new(Cell::new(ViewMode::Live));
         stack.set_visible_child_name("source");
 
+        // Sidebar toggle
+        let sidebar_visible_rc = Rc::new(Cell::new(true));
+        let sidebar_container_clone = sidebar_container.clone();
+        let separator_clone = separator.clone();
+        let sidebar_visible_ref = sidebar_visible_rc.clone();
+        sidebar_toggle.connect_toggled(move |btn| {
+            let visible = btn.is_active();
+            sidebar_container_clone.set_visible(visible);
+            separator_clone.set_visible(visible);
+            sidebar_visible_ref.set(visible);
+        });
+
         // Stack visibility changed handler
         stack.connect_visible_child_notify({
             let mode = mode.clone();
@@ -216,6 +254,191 @@ impl MainWindow {
             );
         });
 
+        // Menu button items
+        let window_clone_new = window.clone();
+        let editor_clone_new = editor.clone();
+        let current_file_new = Rc::new(RefCell::new(None::<String>));
+        let new_btn = gtk::Button::builder()
+            .label("New")
+            .halign(gtk::Align::Fill)
+            .build();
+        new_btn.connect_clicked(move |_| {
+            editor_clone_new.buffer().set_text("# Start writing Markdown...\n\nType or paste your content here.");
+        });
+        menu_box.append(&new_btn);
+
+        let window_clone_open = window.clone();
+        let editor_clone_open = editor.clone();
+        let current_file_open = current_file_new.clone();
+        let open_btn = gtk::Button::builder()
+            .label("Open")
+            .halign(gtk::Align::Fill)
+            .build();
+        open_btn.connect_clicked(move |_| {
+            if let Some(win) = window_clone_open.borrow().clone() {
+                let dialog = FileChooserDialog::new(
+                    Some("Open File"),
+                    Some(&win),
+                    FileChooserAction::Open,
+                    &[("_Cancel", ResponseType::Cancel), ("_Open", ResponseType::Accept)],
+                );
+                let filter = gtk::FileFilter::new();
+                filter.set_name(Some("Markdown Files"));
+                filter.add_pattern("*.md");
+                dialog.add_filter(&filter);
+                let all_filter = gtk::FileFilter::new();
+                all_filter.set_name(Some("All Files"));
+                all_filter.add_pattern("*");
+                dialog.add_filter(&all_filter);
+                let editor = editor_clone_open.clone();
+                let current_file = current_file_open.clone();
+                let window_ref = window_clone_open.clone();
+                dialog.connect_response(move |dlg, response| {
+                    if response == ResponseType::Accept {
+                        if let Some(file) = dlg.file() {
+                            editor.load_file(&file);
+                            if let Some(path) = file.path() {
+                                let path_str = path.to_string_lossy().to_string();
+                                *current_file.borrow_mut() = Some(path_str.clone());
+                                if let Some(w) = window_ref.borrow().clone() {
+                                    let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
+                                    w.set_title(Some(&format!("MinimalMark - {}", name)));
+                                }
+                            }
+                        }
+                    }
+                    dlg.close();
+                });
+                dialog.present();
+            }
+        });
+        menu_box.append(&open_btn);
+
+        let editor_clone_save = editor.clone();
+        let current_file_save = current_file_new.clone();
+        let window_clone_save = window.clone();
+        let save_btn = gtk::Button::builder()
+            .label("Save")
+            .halign(gtk::Align::Fill)
+            .build();
+        save_btn.connect_clicked(move |_| {
+            if let Some(path) = current_file_save.borrow().clone() {
+                editor_clone_save.save_current_file(&path);
+            } else {
+                if let Some(win) = window_clone_save.borrow().clone() {
+                    let dialog = FileChooserDialog::new(
+                        Some("Save File"),
+                        Some(&win),
+                        FileChooserAction::Save,
+                        &[("_Cancel", ResponseType::Cancel), ("_Save", ResponseType::Accept)],
+                    );
+                    dialog.set_current_name("untitled.md");
+                    let filter = gtk::FileFilter::new();
+                    filter.set_name(Some("Markdown Files"));
+                    filter.add_pattern("*.md");
+                    dialog.add_filter(&filter);
+                    let all_filter = gtk::FileFilter::new();
+                    all_filter.set_name(Some("All Files"));
+                    all_filter.add_pattern("*");
+                    dialog.add_filter(&all_filter);
+                    let editor = editor_clone_save.clone();
+                    let current_file = current_file_save.clone();
+                    let window_ref = window_clone_save.clone();
+                    dialog.connect_response(move |dlg, response| {
+                        if response == ResponseType::Accept {
+                            if let Some(file) = dlg.file() {
+                                if let Some(path) = file.path() {
+                                    let path_str = path.to_string_lossy().to_string();
+                                    if editor.save_current_file(&path_str) {
+                                        *current_file.borrow_mut() = Some(path_str.clone());
+                                        if let Some(w) = window_ref.borrow().clone() {
+                                            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
+                                            w.set_title(Some(&format!("MinimalMark - {}", name)));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        dlg.close();
+                    });
+                    dialog.present();
+                }
+            }
+        });
+        menu_box.append(&save_btn);
+
+        let sep1 = gtk::Separator::new(Orientation::Horizontal);
+        menu_box.append(&sep1);
+
+        let editor_clone_bold = editor.clone();
+        let bold_btn = gtk::Button::builder()
+            .label("Bold")
+            .halign(gtk::Align::Fill)
+            .build();
+        bold_btn.connect_clicked(move |_| {
+            editor_clone_bold.insert_around_selection("**", "**");
+        });
+        menu_box.append(&bold_btn);
+
+        let editor_clone_italic = editor.clone();
+        let italic_btn = gtk::Button::builder()
+            .label("Italic")
+            .halign(gtk::Align::Fill)
+            .build();
+        italic_btn.connect_clicked(move |_| {
+            editor_clone_italic.insert_around_selection("*", "*");
+        });
+        menu_box.append(&italic_btn);
+
+        let editor_clone_underline = editor.clone();
+        let underline_btn = gtk::Button::builder()
+            .label("Underline")
+            .halign(gtk::Align::Fill)
+            .build();
+        underline_btn.connect_clicked(move |_| {
+            editor_clone_underline.insert_around_selection("<u>", "</u>");
+        });
+        menu_box.append(&underline_btn);
+
+        let editor_clone_strike = editor.clone();
+        let strike_btn = gtk::Button::builder()
+            .label("Strikethrough")
+            .halign(gtk::Align::Fill)
+            .build();
+        strike_btn.connect_clicked(move |_| {
+            editor_clone_strike.insert_around_selection("~~", "~~");
+        });
+        menu_box.append(&strike_btn);
+
+        let editor_clone_code = editor.clone();
+        let code_btn = gtk::Button::builder()
+            .label("Inline Code")
+            .halign(gtk::Align::Fill)
+            .build();
+        code_btn.connect_clicked(move |_| {
+            editor_clone_code.insert_around_selection("`", "`");
+        });
+        menu_box.append(&code_btn);
+
+        let sep2 = gtk::Separator::new(Orientation::Horizontal);
+        menu_box.append(&sep2);
+
+        let window_clone_prefs = window.clone();
+        let settings_clone_prefs = settings.clone();
+        let editor_clone_prefs = editor.clone();
+        let prefs_btn = gtk::Button::builder()
+            .label("Preferences")
+            .halign(gtk::Align::Fill)
+            .build();
+        prefs_btn.connect_clicked(move |_| {
+            settingsdialog::show_settings(
+                &window_clone_prefs,
+                &settings_clone_prefs,
+                &editor_clone_prefs,
+            );
+        });
+        menu_box.append(&prefs_btn);
+
         // Context menu
         let ctx_popover = build_context_menu(&editor);
         editor.setup_context_menu(ctx_popover.clone());
@@ -262,8 +485,8 @@ impl MainWindow {
             editor.load_file(f);
             if let Some(path) = f.path() {
                 let path_str = path.to_string_lossy().to_string();
-                current_file.borrow_mut().replace(path_str.clone());
-                current_file.borrow_mut().replace(path_str);
+                *current_file.borrow_mut() = Some(path_str.clone());
+                *current_file_new.borrow_mut() = Some(path_str);
             }
             if let Some(name) = f.basename() {
                 window.set_title(Some(&format!("MinimalMark - {}", name.to_string_lossy())));
@@ -286,13 +509,13 @@ impl MainWindow {
             is_focus_mode: Rc::new(Cell::new(false)),
             is_typewriter_mode: Rc::new(Cell::new(false)),
             is_hemingway_mode: Rc::new(Cell::new(false)),
-            current_file: Rc::new(RefCell::new(None)),
+            current_file,
             window: Rc::new(RefCell::new(Some(window.clone()))),
             editor_scroll,
             preview_scroll,
             stack,
             mode,
-            sidebar_visible: Rc::new(Cell::new(true)),
+            sidebar_visible: sidebar_visible_rc,
         }
     }
 
@@ -354,7 +577,7 @@ impl MainWindow {
                         if let Some(path) = file.path() {
                             let path_str = path.to_string_lossy().to_string();
                             if editor.save_current_file(&path_str) {
-                                current_file.borrow_mut().replace(path_str.clone());
+                                *current_file.borrow_mut() = Some(path_str.clone());
                                 if let Some(w) = window_ref.borrow().clone() {
                                     let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
                                     w.set_title(Some(&format!("MinimalMark - {}", name)));
@@ -381,6 +604,7 @@ impl MainWindow {
         match action {
             "bold" => editor.insert_around_selection("**", "**"),
             "italic" => editor.insert_around_selection("*", "*"),
+            "underline" => editor.insert_around_selection("<u>", "</u>"),
             "strikethrough" => editor.insert_around_selection("~~", "~~"),
             "link" => editor.insert_around_selection("[", "](url)"),
             "inline_code" => editor.insert_around_selection("`", "`"),
@@ -435,7 +659,7 @@ impl MainWindow {
                                 if let Some(path) = file.path() {
                                     let path_str = path.to_string_lossy().to_string();
                                     if editor.save_current_file(&path_str) {
-                                        current_file.borrow_mut().replace(path_str.clone());
+                                        *current_file.borrow_mut() = Some(path_str.clone());
                                         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
                                         window_ref.set_title(Some(&format!("MinimalMark - {}", name)));
                                     }

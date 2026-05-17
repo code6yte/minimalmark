@@ -13,11 +13,16 @@ pub struct EditorPane {
     hide_tag: gtk::TextTag,
     bold_tag: gtk::TextTag,
     italic_tag: gtk::TextTag,
+    underline_tag: gtk::TextTag,
     strike_tag: gtk::TextTag,
     code_tag: gtk::TextTag,
     h1_tag: gtk::TextTag,
     h2_tag: gtk::TextTag,
     h3_tag: gtk::TextTag,
+    checkbox_unchecked_tag: gtk::TextTag,
+    checkbox_checked_tag: gtk::TextTag,
+    bullet_tag: gtk::TextTag,
+    blockquote_tag: gtk::TextTag,
     is_source_view: Rc<Cell<bool>>,
     live_preview_enabled: Rc<Cell<bool>>,
     is_applying: Rc<Cell<bool>>,
@@ -64,6 +69,12 @@ impl EditorPane {
             .build();
         buffer.tag_table().add(&tag_italic);
 
+        let tag_underline = gtk::TextTag::builder()
+            .name("lp-underline")
+            .underline(gtk::pango::Underline::Single)
+            .build();
+        buffer.tag_table().add(&tag_underline);
+
         let tag_strike = gtk::TextTag::builder()
             .name("lp-strike")
             .strikethrough(true)
@@ -98,6 +109,28 @@ impl EditorPane {
             .build();
         buffer.tag_table().add(&tag_h3);
 
+        let tag_checkbox_unchecked = gtk::TextTag::builder()
+            .name("lp-checkbox-unchecked")
+            .build();
+        buffer.tag_table().add(&tag_checkbox_unchecked);
+
+        let tag_checkbox_checked = gtk::TextTag::builder()
+            .name("lp-checkbox-checked")
+            .strikethrough(true)
+            .build();
+        buffer.tag_table().add(&tag_checkbox_checked);
+
+        let tag_bullet = gtk::TextTag::builder()
+            .name("lp-bullet")
+            .build();
+        buffer.tag_table().add(&tag_bullet);
+
+        let tag_blockquote = gtk::TextTag::builder()
+            .name("lp-blockquote")
+            .foreground_rgba(&gdk::RGBA::new(0.4, 0.4, 0.4, 1.0))
+            .build();
+        buffer.tag_table().add(&tag_blockquote);
+
         let tag_hide = gtk::TextTag::builder()
             .name("lp-hide")
             .scale(0.1)
@@ -113,11 +146,16 @@ impl EditorPane {
             hide_tag: tag_hide,
             bold_tag: tag_bold,
             italic_tag: tag_italic,
+            underline_tag: tag_underline,
             strike_tag: tag_strike,
             code_tag: tag_code,
             h1_tag: tag_h1,
             h2_tag: tag_h2,
             h3_tag: tag_h3,
+            checkbox_unchecked_tag: tag_checkbox_unchecked,
+            checkbox_checked_tag: tag_checkbox_checked,
+            bullet_tag: tag_bullet,
+            blockquote_tag: tag_blockquote,
             is_source_view: Rc::new(Cell::new(false)),
             live_preview_enabled: Rc::new(Cell::new(true)),
             is_applying: Rc::new(Cell::new(false)),
@@ -171,7 +209,7 @@ impl EditorPane {
     }
 
     pub fn remove_live_preview_tags(&self) {
-        let tag_names = ["lp-hide", "lp-bold", "lp-italic", "lp-strike", "lp-code", "lp-h1", "lp-h2", "lp-h3"];
+        let tag_names = ["lp-hide", "lp-bold", "lp-italic", "lp-underline", "lp-strike", "lp-code", "lp-h1", "lp-h2", "lp-h3", "lp-checkbox-unchecked", "lp-checkbox-checked", "lp-bullet", "lp-blockquote"];
         for name in &tag_names {
             if let Some(tag) = self.buffer.tag_table().lookup(name) {
                 let start = self.buffer.start_iter();
@@ -197,7 +235,7 @@ impl EditorPane {
         let cursor = self.get_cursor_iter();
         let cursor_line = cursor.line();
 
-        // Process headings on all lines except cursor line
+        // Process line-level formatting (headings, bullets, checkboxes, blockquotes)
         let mut line_start = 0i64;
         let mut line_idx = 0i32;
         for (i, &b) in bytes.iter().enumerate() {
@@ -205,20 +243,115 @@ impl EditorPane {
                 let end = if i == len - 1 { i + 1 } else { i };
                 if line_idx != cursor_line {
                     self.apply_heading_format(line_start as i32, end as i32);
+                    self.apply_bullet_format(line_start as i32, end as i32);
+                    self.apply_checkbox_format(line_start as i32, end as i32);
+                    self.apply_blockquote_format(line_start as i32, end as i32);
                 }
                 line_start = i as i64 + 1;
                 line_idx += 1;
             }
         }
 
+        // Process inline patterns
         self.apply_inline_patterns(b"**", b"**", "lp-bold");
         self.apply_inline_patterns(b"__", b"__", "lp-bold");
         self.apply_inline_patterns(b"*", b"*", "lp-italic");
         self.apply_inline_patterns(b"_", b"_", "lp-italic");
         self.apply_inline_patterns(b"~~", b"~~", "lp-strike");
         self.apply_inline_patterns(b"`", b"`", "lp-code");
+        self.apply_inline_patterns(b"<u>", b"</u>", "lp-underline");
 
         self.is_applying.set(false);
+    }
+
+    fn apply_bullet_format(&self, line_start: i32, line_end: i32) {
+        if line_end <= line_start { return; }
+        let text = self.get_text();
+        let bytes = text.as_bytes();
+        if line_start as usize >= bytes.len() { return; }
+        let line_bytes = &bytes[line_start as usize..line_end as usize];
+        let trimmed = line_bytes.iter().position(|&b| b != b' ');
+        let content_start = match trimmed {
+            Some(i) => line_start + i as i32,
+            None => return,
+        };
+
+        if content_start >= line_end { return; }
+        let first_char = bytes[content_start as usize];
+        if (first_char == b'-' || first_char == b'*' || first_char == b'+') && content_start + 1 < line_end && bytes[(content_start + 1) as usize] == b' ' {
+            let marker_end = content_start + 2;
+            let s = self.buffer.iter_at_offset(content_start as i32);
+            let e = self.buffer.iter_at_offset(marker_end as i32);
+            self.buffer.apply_tag(&self.bullet_tag, &s, &e);
+            self.buffer.apply_tag(&self.hide_tag, &s, &e);
+        }
+    }
+
+    fn apply_checkbox_format(&self, line_start: i32, line_end: i32) {
+        if line_end <= line_start { return; }
+        let text = self.get_text();
+        let bytes = text.as_bytes();
+        if line_start as usize >= bytes.len() { return; }
+        let line_bytes = &bytes[line_start as usize..line_end as usize];
+        let trimmed = line_bytes.iter().position(|&b| b != b' ');
+        let content_start = match trimmed {
+            Some(i) => line_start + i as i32,
+            None => return,
+        };
+
+        if content_start + 5 >= line_end { return; }
+        let first_char = bytes[content_start as usize];
+        if first_char != b'-' && first_char != b'*' && first_char != b'+' { return; }
+        if content_start + 1 < line_end && bytes[(content_start + 1) as usize] != b' ' { return; }
+        if content_start + 2 >= line_end || bytes[(content_start + 2) as usize] != b'[' { return; }
+        if content_start + 4 >= line_end || bytes[(content_start + 4) as usize] != b']' { return; }
+        if content_start + 5 < line_end && bytes[(content_start + 5) as usize] != b' ' { return; }
+
+        let marker_start = content_start;
+        let marker_end = content_start + 6;
+        let s = self.buffer.iter_at_offset(marker_start as i32);
+        let e = self.buffer.iter_at_offset(marker_end as i32);
+        self.buffer.apply_tag(&self.hide_tag, &s, &e);
+
+        let checkbox_char = bytes[(content_start + 3) as usize];
+        if checkbox_char == b'x' || checkbox_char == b'X' {
+            let content_start_offset = marker_end as i32;
+            if content_start_offset < line_end {
+                let s = self.buffer.iter_at_offset(content_start_offset);
+                let e = self.buffer.iter_at_offset(line_end as i32);
+                self.buffer.apply_tag(&self.checkbox_checked_tag, &s, &e);
+            }
+        }
+    }
+
+    fn apply_blockquote_format(&self, line_start: i32, line_end: i32) {
+        if line_end <= line_start { return; }
+        let text = self.get_text();
+        let bytes = text.as_bytes();
+        if line_start as usize >= bytes.len() { return; }
+        let line_bytes = &bytes[line_start as usize..line_end as usize];
+        let trimmed = line_bytes.iter().position(|&b| b != b' ');
+        let content_start = match trimmed {
+            Some(i) => line_start + i as i32,
+            None => return,
+        };
+
+        if content_start >= line_end || bytes[content_start as usize] != b'>' { return; }
+        let marker_end = if content_start + 1 < line_end && bytes[(content_start + 1) as usize] == b' ' {
+            content_start + 2
+        } else {
+            content_start + 1
+        };
+        let s = self.buffer.iter_at_offset(content_start as i32);
+        let e = self.buffer.iter_at_offset(marker_end as i32);
+        self.buffer.apply_tag(&self.hide_tag, &s, &e);
+        self.buffer.apply_tag(&self.blockquote_tag, &s, &e);
+
+        if marker_end < line_end {
+            let s = self.buffer.iter_at_offset(marker_end as i32);
+            let e = self.buffer.iter_at_offset(line_end as i32);
+            self.buffer.apply_tag(&self.blockquote_tag, &s, &e);
+        }
     }
 
     fn apply_heading_format(&self, line_start: i32, line_end: i32) {
