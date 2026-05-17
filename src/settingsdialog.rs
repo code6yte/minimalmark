@@ -7,9 +7,11 @@ use std::cell::RefCell;
 
 fn get_local_monospace_fonts() -> Vec<String> {
     let mut fonts = Vec::new();
-    use gtk::prelude::*;
+    use gtk::prelude::PangoContextExt;
     if let Some(display) = gtk::gdk::Display::default() {
+        use gtk::prelude::GdkDisplayExt;
         let ctx = display.pango_context();
+        use gtk::prelude::PangoContextExtManual;
         let families = ctx.list_families();
         for family in families {
             let name = family.name();

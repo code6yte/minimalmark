@@ -308,12 +308,12 @@ impl MainWindow {
         &self.settings
     }
 
-    pub fn current_file(&self) -> Rc<Cell<Option<String>>> {
+    pub fn current_file(&self) -> Rc<RefCell<Option<String>>> {
         self.current_file.clone()
     }
 
     pub fn set_current_file(&self, path: Option<String>) {
-        self.current_file.borrow_mut().replace(path);
+        self.current_file.borrow_mut().replace(Some(path));
     }
 
     pub fn trigger_save(&self) {
