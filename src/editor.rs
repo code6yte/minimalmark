@@ -371,6 +371,20 @@ impl EditorPane {
         );
     }
 
+    pub fn set_line_spacing(&self, spacing: f64) {
+        let provider = gtk::CssProvider::new();
+        let css = format!(
+            "textview {{ line-height: {}; }}",
+            spacing
+        );
+        provider.load_from_string(&css);
+        gtk::style_context_add_provider_for_display(
+            &self.view.clone().upcast::<gtk::Widget>().display(),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
+
     pub fn toggle_line_numbers(&self, show: bool) {
         self.view.set_show_line_numbers(show);
     }

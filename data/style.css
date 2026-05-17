@@ -204,16 +204,15 @@ window.dark scrollbar slider {
 .ctx-menu {
     border-radius: 10px;
     border: 1px solid #D2D2D7;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     padding: 4px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
+    background: #FFFFFF;
 }
 
 window.dark .ctx-menu {
     border: 1px solid #38383A;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    background: rgba(44, 44, 46, 0.95);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background: #2C2C2E;
 }
 
 .ctx-section {

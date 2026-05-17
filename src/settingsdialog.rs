@@ -5,11 +5,42 @@ use crate::editor::EditorPane;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+fn get_local_monospace_fonts() -> Vec<String> {
+    let mut fonts = Vec::new();
+    let ctx = fontconfig::FontConfig::new();
+    if let Ok(pattern) = ctx.pattern_new() {
+        let _ = pattern.add_string("spacing", "mono");
+        let _ = pattern.add_string("scalable", "true");
+        if let Ok(mut set) = ctx.list(pattern) {
+            let count = set.len();
+            for i in 0..count {
+                if let Ok(pattern) = set.get(i) {
+                    if let Ok(family) = pattern.get_string("family") {
+                        if !family.is_empty() && !fonts.contains(&family) {
+                            fonts.push(family);
+                            if fonts.len() >= 50 {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if fonts.is_empty() {
+        fonts.push("monospace".to_string());
+    }
+    fonts
+}
+
 pub fn show_settings(
     parent: &impl IsA<gtk::Window>,
     settings: &Rc<RefCell<AppSettings>>,
     editor: &EditorPane,
 ) {
+    let local_fonts = get_local_monospace_fonts();
+    let font_names: Vec<&str> = local_fonts.iter().map(|s| s.as_str()).collect();
+
     let win = PreferencesWindow::builder()
         .title("Preferences")
         .transient_for(parent)
@@ -120,18 +151,7 @@ pub fn show_settings(
     let font_row = ComboRow::builder()
         .title("Editor Font")
         .build();
-    let font_model = gtk::StringList::new(&[
-        "SF Mono, JetBrains Mono, Fira Code, monospace",
-        "JetBrains Mono, monospace",
-        "Fira Code, monospace",
-        "Cascadia Code, monospace",
-        "Source Code Pro, monospace",
-        "Hack, monospace",
-        "Ubuntu Mono, monospace",
-        "DejaVu Sans Mono, monospace",
-        "Consolas, monospace",
-        "Menlo, monospace",
-    ]);
+    let font_model = gtk::StringList::new(&font_names);
     font_row.set_model(Some(&font_model));
     let current_font = settings.borrow().editor_font.clone();
     let mut font_idx = 0u32;
@@ -154,7 +174,9 @@ pub fn show_settings(
                 settings.borrow_mut().editor_font = font_str.clone();
                 settings.borrow().save();
                 let size = settings.borrow().editor_font_size;
+                let line_spacing = settings.borrow().line_spacing;
                 editor.set_font(&font_str, size);
+                editor.set_line_spacing(line_spacing);
             }
         });
     }
@@ -163,7 +185,7 @@ pub fn show_settings(
     let font_size_row = SpinRow::builder()
         .title("Font Size")
         .subtitle("Editor font size in pixels")
-        .adjustment(&gtk::Adjustment::new(12.0, 8.0, 24.0, 1.0, 2.0, 0.0))
+        .adjustment(&gtk::Adjustment::new(12.0, 8.0, 32.0, 1.0, 2.0, 0.0))
         .value(settings.borrow().editor_font_size as f64)
         .build();
     {
@@ -178,6 +200,24 @@ pub fn show_settings(
         });
     }
     font_group.add(&font_size_row);
+
+    let line_spacing_row = SpinRow::builder()
+        .title("Line Spacing")
+        .subtitle("Vertical space between lines")
+        .adjustment(&gtk::Adjustment::new(1.6, 1.0, 3.0, 0.1, 0.2, 0.0))
+        .value(settings.borrow().line_spacing)
+        .build();
+    {
+        let settings = settings.clone();
+        let editor = editor.clone();
+        line_spacing_row.connect_value_notify(move |row| {
+            let spacing = row.value();
+            settings.borrow_mut().line_spacing = spacing;
+            settings.borrow().save();
+            editor.set_line_spacing(spacing);
+        });
+    }
+    font_group.add(&line_spacing_row);
 
     editor_page.add(&font_group);
 

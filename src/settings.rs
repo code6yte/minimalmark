@@ -14,6 +14,8 @@ pub struct AppSettings {
     pub theme: ThemeMode,
     pub editor_font: String,
     pub editor_font_size: u32,
+    pub line_spacing: f64,
+    pub word_spacing: f64,
     pub preview_width_percent: f64,
     pub auto_save: bool,
     pub auto_save_interval: u64,
@@ -36,8 +38,10 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             theme: ThemeMode::System,
-            editor_font: "SF Mono, JetBrains Mono, Fira Code, monospace".to_string(),
+            editor_font: "monospace".to_string(),
             editor_font_size: 14,
+            line_spacing: 1.6,
+            word_spacing: 0.0,
             preview_width_percent: 50.0,
             auto_save: true,
             auto_save_interval: 30,

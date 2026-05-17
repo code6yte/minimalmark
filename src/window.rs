@@ -1,6 +1,6 @@
 use gio::prelude::*;
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Orientation, ScrolledWindow, EventControllerKey, ToggleButton, SearchEntry, Stack, MenuButton, PopoverMenu, StackSwitcher};
+use gtk::{Box as GtkBox, Orientation, ScrolledWindow, EventControllerKey, ToggleButton, SearchEntry, Stack, StackSwitcher, FileChooserDialog, FileChooserAction, ResponseType};
 use adw::ApplicationWindow;
 use std::cell::Cell;
 use std::rc::Rc;
@@ -53,36 +53,15 @@ impl MainWindow {
 
         let header = gtk::HeaderBar::new();
 
-        // Sidebar toggle button
-        let sidebar_toggle = ToggleButton::builder()
-            .icon_name("sidebar-show-symbolic")
-            .tooltip_text("Toggle Outline (Ctrl+H)")
-            .active(true)
-            .build();
-        header.pack_start(&sidebar_toggle);
-
         // View mode stack switcher
         let stack_switcher = StackSwitcher::builder()
             .build();
+        header.pack_end(&stack_switcher);
 
         // Settings button
         let settings_btn = gtk::Button::from_icon_name("emblem-system-symbolic");
         settings_btn.set_tooltip_text(Some("Preferences (Ctrl+,)"));
         header.pack_end(&settings_btn);
-
-        // Menu button
-        let menu_button = MenuButton::builder()
-            .icon_name("open-menu-symbolic")
-            .tooltip_text("Menu")
-            .build();
-
-        // Build popover menu
-        let menu_model = Self::build_menu_model();
-        let popover = PopoverMenu::from_model(Some(&menu_model));
-        menu_button.set_popover(Some(&popover));
-
-        header.pack_end(&menu_button);
-        header.pack_end(&stack_switcher);
 
         let main_box = GtkBox::builder()
             .orientation(Orientation::Horizontal)
@@ -139,11 +118,6 @@ impl MainWindow {
         content_box.append(&stack);
         stack_switcher.set_stack(Some(&stack));
 
-        // Clone before any moves into closures
-        let stack_for_toggle = stack.clone();
-        let sidebar_container_clone = sidebar_container.clone();
-        let separator_clone = separator.clone();
-
         let search_bar = GtkBox::builder()
             .orientation(Orientation::Horizontal)
             .spacing(4)
@@ -180,20 +154,6 @@ impl MainWindow {
         // View mode: default to Live
         let mode = Rc::new(Cell::new(ViewMode::Live));
         stack.set_visible_child_name("source");
-
-        // Sidebar toggle
-        sidebar_toggle.connect_toggled({
-            let sidebar_container = sidebar_container_clone.clone();
-            let separator = separator_clone.clone();
-            let sidebar_visible = Rc::new(Cell::new(true));
-            let sidebar_visible_ref = sidebar_visible.clone();
-            move |btn| {
-                let visible = btn.is_active();
-                sidebar_container.set_visible(visible);
-                separator.set_visible(visible);
-                sidebar_visible_ref.set(visible);
-            }
-        });
 
         // Stack visibility changed handler
         stack.connect_visible_child_notify({
@@ -265,6 +225,7 @@ impl MainWindow {
         let editor_clone_shortcuts = editor.clone();
         let mode_clone_shortcuts = mode.clone();
         let stack_clone_shortcuts = stack.clone();
+        let current_file_shortcuts = Rc::new(Cell::new(None));
 
         let event_controller = EventControllerKey::new();
         shortcuts::setup_shortcuts(&event_controller, move |action| {
@@ -274,6 +235,7 @@ impl MainWindow {
                 &editor_clone_shortcuts,
                 &mode_clone_shortcuts,
                 &stack_clone_shortcuts,
+                &current_file_shortcuts,
             );
         });
         editor.view().upcast_ref::<gtk::Widget>().add_controller(event_controller);
@@ -295,6 +257,11 @@ impl MainWindow {
         // Load file if provided
         if let Some(f) = file {
             editor.load_file(f);
+            if let Some(path) = f.path() {
+                let path_str = path.to_string_lossy().to_string();
+                current_file.set(Some(path_str.clone()));
+                current_file_shortcuts.set(Some(path_str));
+            }
             if let Some(name) = f.basename() {
                 window.set_title(Some(&format!("MinimalMark - {}", name.to_string_lossy())));
             }
@@ -326,30 +293,6 @@ impl MainWindow {
         }
     }
 
-    fn build_menu_model() -> gio::MenuModel {
-        let menu = gio::Menu::new();
-
-        let file_section = gio::Menu::new();
-        file_section.append(Some("New"), Some("app.new"));
-        file_section.append(Some("Open"), Some("app.open"));
-        file_section.append(Some("Save"), Some("app.save"));
-        menu.append_section(None, &file_section);
-
-        let edit_section = gio::Menu::new();
-        edit_section.append(Some("Bold"), Some("win.bold"));
-        edit_section.append(Some("Italic"), Some("win.italic"));
-        edit_section.append(Some("Strikethrough"), Some("win.strikethrough"));
-        edit_section.append(Some("Inline Code"), Some("win.inline_code"));
-        menu.append_section(None, &edit_section);
-
-        let view_section = gio::Menu::new();
-        view_section.append(Some("Preferences"), Some("win.preferences"));
-        view_section.append(Some("Toggle Sidebar"), Some("win.toggle_sidebar"));
-        menu.append_section(None, &view_section);
-
-        menu.upcast()
-    }
-
     pub fn container(&self) -> &GtkBox {
         &self.container
     }
@@ -370,12 +313,67 @@ impl MainWindow {
         self.current_file.set(path);
     }
 
+    pub fn trigger_save(&self) {
+        if let Some(path) = self.current_file.get() {
+            self.editor.save_current_file(&path);
+        } else {
+            self.trigger_save_as();
+        }
+    }
+
+    pub fn trigger_save_as(&self) {
+        if let Some(win) = self.window.get() {
+            let dialog = FileChooserDialog::new(
+                Some("Save File"),
+                Some(&win),
+                FileChooserAction::Save,
+                &[("_Cancel", ResponseType::Cancel), ("_Save", ResponseType::Accept)],
+            );
+            dialog.set_current_name("untitled.md");
+
+            let filter = gtk::FileFilter::new();
+            filter.set_name(Some("Markdown Files"));
+            filter.add_pattern("*.md");
+            dialog.add_filter(&filter);
+
+            let all_filter = gtk::FileFilter::new();
+            all_filter.set_name(Some("All Files"));
+            all_filter.add_pattern("*");
+            dialog.add_filter(&all_filter);
+
+            let editor = self.editor.clone();
+            let current_file = self.current_file.clone();
+            let window_ref = self.window.clone();
+
+            dialog.connect_response(move |dlg, response| {
+                if response == ResponseType::Accept {
+                    if let Some(file) = dlg.file() {
+                        if let Some(path) = file.path() {
+                            let path_str = path.to_string_lossy().to_string();
+                            if editor.save_current_file(&path_str) {
+                                current_file.set(Some(path_str.clone()));
+                                if let Some(w) = window_ref.get() {
+                                    let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
+                                    w.set_title(Some(&format!("MinimalMark - {}", name)));
+                                }
+                            }
+                        }
+                    }
+                }
+                dlg.close();
+            });
+
+            dialog.present();
+        }
+    }
+
     fn handle_shortcut(
         action: &str,
         window: &ApplicationWindow,
         editor: &EditorPane,
         mode: &Rc<Cell<ViewMode>>,
         stack: &Stack,
+        current_file: &Rc<Cell<Option<String>>>,
     ) {
         match action {
             "bold" => editor.insert_around_selection("**", "**"),
@@ -402,7 +400,51 @@ impl MainWindow {
             "typewriter_mode" => {}
             "command_palette" => {}
             "settings" => {}
-            "save" => {}
+            "save" => {
+                if let Some(path) = current_file.get() {
+                    editor.save_current_file(&path);
+                } else {
+                    let dialog = FileChooserDialog::new(
+                        Some("Save File"),
+                        Some(window),
+                        FileChooserAction::Save,
+                        &[("_Cancel", ResponseType::Cancel), ("_Save", ResponseType::Accept)],
+                    );
+                    dialog.set_current_name("untitled.md");
+
+                    let filter = gtk::FileFilter::new();
+                    filter.set_name(Some("Markdown Files"));
+                    filter.add_pattern("*.md");
+                    dialog.add_filter(&filter);
+
+                    let all_filter = gtk::FileFilter::new();
+                    all_filter.set_name(Some("All Files"));
+                    all_filter.add_pattern("*");
+                    dialog.add_filter(&all_filter);
+
+                    let editor = editor.clone();
+                    let current_file = current_file.clone();
+                    let window_ref = window.clone();
+
+                    dialog.connect_response(move |dlg, response| {
+                        if response == ResponseType::Accept {
+                            if let Some(file) = dlg.file() {
+                                if let Some(path) = file.path() {
+                                    let path_str = path.to_string_lossy().to_string();
+                                    if editor.save_current_file(&path_str) {
+                                        current_file.set(Some(path_str.clone()));
+                                        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
+                                        window_ref.set_title(Some(&format!("MinimalMark - {}", name)));
+                                    }
+                                }
+                            }
+                        }
+                        dlg.close();
+                    });
+
+                    dialog.present();
+                }
+            }
             "fullscreen" => {
                 if window.is_fullscreen() { window.unfullscreen(); }
                 else { window.fullscreen(); }
