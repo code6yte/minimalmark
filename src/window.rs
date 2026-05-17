@@ -35,7 +35,7 @@ pub struct MainWindow {
     is_typewriter_mode: Rc<Cell<bool>>,
     is_hemingway_mode: Rc<Cell<bool>>,
     current_file: Rc<Cell<Option<String>>>,
-    window: Rc<Cell<Option<ApplicationWindow>>>,
+    window: Rc<RefCell<Option<ApplicationWindow>>>,
     editor_scroll: ScrolledWindow,
     preview_scroll: ScrolledWindow,
     stack: Stack,
@@ -220,12 +220,15 @@ impl MainWindow {
         let ctx_popover = build_context_menu(&editor);
         editor.setup_context_menu(ctx_popover.clone());
 
+        // Create current_file early for shortcuts
+        let current_file = Rc::new(RefCell::new(None::<String>));
+
         // Keyboard shortcuts
         let window_clone_shortcuts = window.clone();
         let editor_clone_shortcuts = editor.clone();
         let mode_clone_shortcuts = mode.clone();
         let stack_clone_shortcuts = stack.clone();
-        let current_file_shortcuts = Rc::new(Cell::new(None));
+        let current_file_for_shortcuts = current_file.clone();
 
         let event_controller = EventControllerKey::new();
         shortcuts::setup_shortcuts(&event_controller, move |action| {
@@ -235,7 +238,7 @@ impl MainWindow {
                 &editor_clone_shortcuts,
                 &mode_clone_shortcuts,
                 &stack_clone_shortcuts,
-                &current_file_shortcuts,
+                &current_file_for_shortcuts,
             );
         });
         editor.view().upcast_ref::<gtk::Widget>().add_controller(event_controller);
@@ -259,7 +262,7 @@ impl MainWindow {
             editor.load_file(f);
             if let Some(path) = f.path() {
                 let path_str = path.to_string_lossy().to_string();
-                current_file.set(Some(path_str.clone()));
+                current_file.borrow_mut().replace(path_str.clone());
                 current_file_shortcuts.set(Some(path_str));
             }
             if let Some(name) = f.basename() {
@@ -284,7 +287,7 @@ impl MainWindow {
             is_typewriter_mode: Rc::new(Cell::new(false)),
             is_hemingway_mode: Rc::new(Cell::new(false)),
             current_file: Rc::new(Cell::new(None)),
-            window: Rc::new(Cell::new(Some(window.clone()))),
+            window: Rc::new(RefCell::new(Some(window.clone()))),
             editor_scroll,
             preview_scroll,
             stack,
@@ -314,7 +317,7 @@ impl MainWindow {
     }
 
     pub fn trigger_save(&self) {
-        if let Some(path) = self.current_file.get() {
+        if let Some(path) = self.current_file.borrow().clone() {
             self.editor.save_current_file(&path);
         } else {
             self.trigger_save_as();
@@ -322,7 +325,7 @@ impl MainWindow {
     }
 
     pub fn trigger_save_as(&self) {
-        if let Some(win) = self.window.get() {
+        if let Some(win) = self.window.borrow().clone() {
             let dialog = FileChooserDialog::new(
                 Some("Save File"),
                 Some(&win),
@@ -351,8 +354,8 @@ impl MainWindow {
                         if let Some(path) = file.path() {
                             let path_str = path.to_string_lossy().to_string();
                             if editor.save_current_file(&path_str) {
-                                current_file.set(Some(path_str.clone()));
-                                if let Some(w) = window_ref.get() {
+                                current_file.borrow_mut().replace(path_str.clone());
+                                if let Some(w) = window_ref.borrow().clone() {
                                     let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
                                     w.set_title(Some(&format!("MinimalMark - {}", name)));
                                 }
@@ -401,7 +404,7 @@ impl MainWindow {
             "command_palette" => {}
             "settings" => {}
             "save" => {
-                if let Some(path) = current_file.get() {
+                if let Some(path) = current_file.borrow().clone() {
                     editor.save_current_file(&path);
                 } else {
                     let dialog = FileChooserDialog::new(
@@ -432,7 +435,7 @@ impl MainWindow {
                                 if let Some(path) = file.path() {
                                     let path_str = path.to_string_lossy().to_string();
                                     if editor.save_current_file(&path_str) {
-                                        current_file.set(Some(path_str.clone()));
+                                        current_file.borrow_mut().replace(path_str.clone());
                                         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
                                         window_ref.set_title(Some(&format!("MinimalMark - {}", name)));
                                     }
