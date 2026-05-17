@@ -8,8 +8,6 @@ use std::cell::RefCell;
 fn get_local_monospace_fonts() -> Vec<String> {
     let mut fonts = Vec::new();
     let context = gtk::gdk::Display::default()
-        .and_then(|d| d.default_screen())
-        .map(|s| s.display())
         .and_then(|d| d.pango_context());
     
     if let Some(ctx) = context {

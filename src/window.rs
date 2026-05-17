@@ -34,7 +34,7 @@ pub struct MainWindow {
     is_focus_mode: Rc<Cell<bool>>,
     is_typewriter_mode: Rc<Cell<bool>>,
     is_hemingway_mode: Rc<Cell<bool>>,
-    current_file: Rc<Cell<Option<String>>>,
+    current_file: Rc<RefCell<Option<String>>>,
     window: Rc<RefCell<Option<ApplicationWindow>>>,
     editor_scroll: ScrolledWindow,
     preview_scroll: ScrolledWindow,
@@ -286,7 +286,7 @@ impl MainWindow {
             is_focus_mode: Rc::new(Cell::new(false)),
             is_typewriter_mode: Rc::new(Cell::new(false)),
             is_hemingway_mode: Rc::new(Cell::new(false)),
-            current_file: Rc::new(Cell::new(None)),
+            current_file: Rc::new(RefCell::new(None)),
             window: Rc::new(RefCell::new(Some(window.clone()))),
             editor_scroll,
             preview_scroll,
@@ -376,7 +376,7 @@ impl MainWindow {
         editor: &EditorPane,
         mode: &Rc<Cell<ViewMode>>,
         stack: &Stack,
-        current_file: &Rc<Cell<Option<String>>>,
+        current_file: &Rc<RefCell<Option<String>>>,
     ) {
         match action {
             "bold" => editor.insert_around_selection("**", "**"),
