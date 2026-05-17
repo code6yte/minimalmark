@@ -275,42 +275,38 @@ impl MainWindow {
             .halign(gtk::Align::Fill)
             .build();
         open_btn.connect_clicked(move |_| {
-            if let Some(win) = window_clone_open.borrow().clone() {
-                let dialog = FileChooserDialog::new(
-                    Some("Open File"),
-                    Some(&win),
-                    FileChooserAction::Open,
-                    &[("_Cancel", ResponseType::Cancel), ("_Open", ResponseType::Accept)],
-                );
-                let filter = gtk::FileFilter::new();
-                filter.set_name(Some("Markdown Files"));
-                filter.add_pattern("*.md");
-                dialog.add_filter(&filter);
-                let all_filter = gtk::FileFilter::new();
-                all_filter.set_name(Some("All Files"));
-                all_filter.add_pattern("*");
-                dialog.add_filter(&all_filter);
-                let editor = editor_clone_open.clone();
-                let current_file = current_file_open.clone();
-                let window_ref = window_clone_open.clone();
-                dialog.connect_response(move |dlg, response| {
-                    if response == ResponseType::Accept {
-                        if let Some(file) = dlg.file() {
-                            editor.load_file(&file);
-                            if let Some(path) = file.path() {
-                                let path_str = path.to_string_lossy().to_string();
-                                *current_file.borrow_mut() = Some(path_str.clone());
-                                if let Some(w) = window_ref.borrow().clone() {
-                                    let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
-                                    w.set_title(Some(&format!("MinimalMark - {}", name)));
-                                }
-                            }
+            let dialog = FileChooserDialog::new(
+                Some("Open File"),
+                Some(&window_clone_open),
+                FileChooserAction::Open,
+                &[("_Cancel", ResponseType::Cancel), ("_Open", ResponseType::Accept)],
+            );
+            let filter = gtk::FileFilter::new();
+            filter.set_name(Some("Markdown Files"));
+            filter.add_pattern("*.md");
+            dialog.add_filter(&filter);
+            let all_filter = gtk::FileFilter::new();
+            all_filter.set_name(Some("All Files"));
+            all_filter.add_pattern("*");
+            dialog.add_filter(&all_filter);
+            let editor = editor_clone_open.clone();
+            let current_file = current_file_open.clone();
+            let window_ref = window_clone_open.clone();
+            dialog.connect_response(move |dlg, response| {
+                if response == ResponseType::Accept {
+                    if let Some(file) = dlg.file() {
+                        editor.load_file(&file);
+                        if let Some(path) = file.path() {
+                            let path_str = path.to_string_lossy().to_string();
+                            *current_file.borrow_mut() = Some(path_str.clone());
+                            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
+                            window_ref.set_title(Some(&format!("MinimalMark - {}", name)));
                         }
                     }
-                    dlg.close();
-                });
-                dialog.present();
-            }
+                }
+                dlg.close();
+            });
+            dialog.present();
         });
         menu_box.append(&open_btn);
 
@@ -325,44 +321,40 @@ impl MainWindow {
             if let Some(path) = current_file_save.borrow().clone() {
                 editor_clone_save.save_current_file(&path);
             } else {
-                if let Some(win) = window_clone_save.borrow().clone() {
-                    let dialog = FileChooserDialog::new(
-                        Some("Save File"),
-                        Some(&win),
-                        FileChooserAction::Save,
-                        &[("_Cancel", ResponseType::Cancel), ("_Save", ResponseType::Accept)],
-                    );
-                    dialog.set_current_name("untitled.md");
-                    let filter = gtk::FileFilter::new();
-                    filter.set_name(Some("Markdown Files"));
-                    filter.add_pattern("*.md");
-                    dialog.add_filter(&filter);
-                    let all_filter = gtk::FileFilter::new();
-                    all_filter.set_name(Some("All Files"));
-                    all_filter.add_pattern("*");
-                    dialog.add_filter(&all_filter);
-                    let editor = editor_clone_save.clone();
-                    let current_file = current_file_save.clone();
-                    let window_ref = window_clone_save.clone();
-                    dialog.connect_response(move |dlg, response| {
-                        if response == ResponseType::Accept {
-                            if let Some(file) = dlg.file() {
-                                if let Some(path) = file.path() {
-                                    let path_str = path.to_string_lossy().to_string();
-                                    if editor.save_current_file(&path_str) {
-                                        *current_file.borrow_mut() = Some(path_str.clone());
-                                        if let Some(w) = window_ref.borrow().clone() {
-                                            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
-                                            w.set_title(Some(&format!("MinimalMark - {}", name)));
-                                        }
-                                    }
+                let dialog = FileChooserDialog::new(
+                    Some("Save File"),
+                    Some(&window_clone_save),
+                    FileChooserAction::Save,
+                    &[("_Cancel", ResponseType::Cancel), ("_Save", ResponseType::Accept)],
+                );
+                dialog.set_current_name("untitled.md");
+                let filter = gtk::FileFilter::new();
+                filter.set_name(Some("Markdown Files"));
+                filter.add_pattern("*.md");
+                dialog.add_filter(&filter);
+                let all_filter = gtk::FileFilter::new();
+                all_filter.set_name(Some("All Files"));
+                all_filter.add_pattern("*");
+                dialog.add_filter(&all_filter);
+                let editor = editor_clone_save.clone();
+                let current_file = current_file_save.clone();
+                let window_ref = window_clone_save.clone();
+                dialog.connect_response(move |dlg, response| {
+                    if response == ResponseType::Accept {
+                        if let Some(file) = dlg.file() {
+                            if let Some(path) = file.path() {
+                                let path_str = path.to_string_lossy().to_string();
+                                if editor.save_current_file(&path_str) {
+                                    *current_file.borrow_mut() = Some(path_str.clone());
+                                    let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "MinimalMark".into());
+                                    window_ref.set_title(Some(&format!("MinimalMark - {}", name)));
                                 }
                             }
                         }
-                        dlg.close();
-                    });
-                    dialog.present();
-                }
+                    }
+                    dlg.close();
+                });
+                dialog.present();
             }
         });
         menu_box.append(&save_btn);
