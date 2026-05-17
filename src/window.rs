@@ -263,7 +263,7 @@ impl MainWindow {
             if let Some(path) = f.path() {
                 let path_str = path.to_string_lossy().to_string();
                 current_file.borrow_mut().replace(path_str.clone());
-                current_file_shortcuts.set(Some(path_str));
+                current_file.borrow_mut().replace(path_str);
             }
             if let Some(name) = f.basename() {
                 window.set_title(Some(&format!("MinimalMark - {}", name.to_string_lossy())));
@@ -313,7 +313,7 @@ impl MainWindow {
     }
 
     pub fn set_current_file(&self, path: Option<String>) {
-        self.current_file.set(path);
+        self.current_file.borrow_mut().replace(path);
     }
 
     pub fn trigger_save(&self) {
