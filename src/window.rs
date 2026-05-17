@@ -313,7 +313,7 @@ impl MainWindow {
     }
 
     pub fn set_current_file(&self, path: Option<String>) {
-        self.current_file.borrow_mut().replace(Some(path));
+        self.current_file.borrow_mut().replace(path);
     }
 
     pub fn trigger_save(&self) {
