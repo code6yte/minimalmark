@@ -6,27 +6,28 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 fn get_local_monospace_fonts() -> Vec<String> {
-    let mut fonts = Vec::new();
-    use gtk::prelude::PangoContextExt;
-    if let Some(display) = gtk::gdk::Display::default() {
-        use gtk::prelude::GdkDisplayExt;
-        let ctx = display.pango_context();
-        use gtk::prelude::PangoContextExtManual;
-        let families = ctx.list_families();
-        for family in families {
-            let name = family.name();
-            let is_mono = family.is_monospace();
-            if is_mono && !fonts.contains(&name.to_string()) {
-                fonts.push(name.to_string());
-            }
-        }
-    }
-    
-    if fonts.is_empty() {
-        fonts.push("monospace".to_string());
-    }
-    fonts.sort();
-    fonts
+    vec![
+        "monospace".to_string(),
+        "DejaVu Sans Mono".to_string(),
+        "Liberation Mono".to_string(),
+        "Ubuntu Mono".to_string(),
+        "Noto Sans Mono".to_string(),
+        "Source Code Pro".to_string(),
+        "Fira Code".to_string(),
+        "Fira Mono".to_string(),
+        "JetBrains Mono".to_string(),
+        "Hack".to_string(),
+        "Cascadia Code".to_string(),
+        "Cascadia Mono".to_string(),
+        "Consolas".to_string(),
+        "Courier New".to_string(),
+        "Inconsolata".to_string(),
+        "Terminus".to_string(),
+        "Droid Sans Mono".to_string(),
+        "Roboto Mono".to_string(),
+        "IBM Plex Mono".to_string(),
+        "Anonymous Pro".to_string(),
+    ]
 }
 
 pub fn show_settings(
